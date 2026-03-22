@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Gilded Salon - Slot Machine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;0,900;1,900&family=Manrope:wght@400;600&family=Work+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f2ca50;
+            --primary-container: #d4af37;
+            --background: #001806;
+            --surface-variant: #0b3d1b;
+            --on-surface: #baf0be;
+            --gold-gradient: linear-gradient(180deg, #ffe088 0%, #d4af37 100%);
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: var(--background);
+            color: var(--on-surface);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .font-headline { font-family: 'Noto Serif', serif; }
+        .font-label { font-family: 'Work Sans', sans-serif; }
+
+        .felt-texture {
+            background-color: #0b3d1b;
+            background-image: radial-gradient(#0d4a21 0.5px, transparent 0.5px);
+            background-size: 4px 4px;
+        }
+
+        .gilded-text {
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .reel-container {
+            perspective: 1000px;
+            overflow: hidden;
+            background: #001204;
+            border: 2px solid rgba(242, 202, 80, 0.2);
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.9);
+        }
+
+        .reel-strip {
+            transition: transform 0.1s linear;
+            will-change: transform;
+        }
+
+        .symbol {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .win-overlay {
+            background: rgba(0, 24, 6, 0.8);
+            backdrop-filter: blur(4px);
+            display: none;
+        }
+
+        .win-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animate-bounce-custom {
+            animation: bounce 0.5s infinite;
+        }
+
+        .near-miss-glow {
+            box-shadow: 0 0 20px #f2ca50;
+            border: 2px solid #f2ca50;
+            z-index: 10;
+        }
+
+        /* Hide scrollbars */
+        ::-webkit-scrollbar { display: none; }
+
+        .spin-button-active {
+            transform: scale(0.95);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .payline-indicator {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gold-gradient);
+            transform: translateY(-50%);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .paytable-modal {
+            transform: translateY(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .paytable-modal.active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="felt-texture">
+
+    <!-- Top Bar -->
+    <nav class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0b3d1b]/80 backdrop-blur-md border-b border-[#4d4635]/20 shadow-xl">
+        <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#f2ca50]" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+            <span id="balance-display" class="font-headline font-bold text-xl tracking-tight text-[#f2ca50]">$1,000</span>
+        </div>
+        <div class="text-[#f2ca50] font-headline font-black italic text-lg hidden sm:block">THE GILDED SALON</div>
+        <button id="paytable-btn" class="text-[#d0c5af] hover:text-[#ffe088]">
+            <span class="material-symbols-outlined">info</span>
+        </button>
+    </nav>
+
+    <!-- Main Game Area -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4 relative">
+        
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="fixed inset-0 z-[200] bg-[#001806] flex flex-col items-center justify-center felt-texture">
+            <div class="mb-8 animate-bounce">
+                <span class="material-symbols-outlined text-8xl text-[#f2ca50]" style="font-variation-settings: 'FILL' 1;">trophy</span>
+            </div>
+            <h1 class="font-headline text-4xl font-black italic text-[#f2ca50] tracking-widest mb-4">THE GILDED SALON</h1>
+            <div class="w-48 h-1 bg-[#0b3d1b] rounded-full overflow-hidden">
+                <div id="loading-bar" class="w-0 h-full bg-[#f2ca50] transition-all duration-2000 ease-out"></div>
+            </div>
+            <p class="mt-4 font-label text-[10px] uppercase tracking-[0.3em] text-[#f2ca50]/60">Preparing your private table...</p>
+        </div>
+
+        <!-- Slot Machine Frame -->
+        <div class="relative w-full max-w-4xl bg-[#001204] rounded-xl p-3 border-4 border-[#4d4635]/40 shadow-2xl overflow-hidden">
+            <div class="payline-indicator"></div>
+            
+            <!-- Reels Grid -->
+            <div class="grid grid-cols-5 gap-1 h-[300px] relative" id="reels-grid">
+                <!-- Reels will be injected here -->
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="mt-8 w-full max-w-2xl flex items-center justify-between gap-4 z-30">
+            <!-- Bet Controls -->
+            <div class="flex flex-col items-center">
+                <span class="font-label text-[10px] uppercase tracking-widest text-[#d0c5af] mb-1">Total Bet</span>
+                <div class="bg-[#001204] px-4 py-2 rounded-sm border-b border-[#4d4635] flex items-center gap-3">
+                    <button id="bet-minus" class="w-8 h-8 rounded-sm bg-[#0b3d1b] text-[#f2ca50] border border-[#4d4635]/30 flex items-center justify-center hover:bg-[#11421f]">-</button>
+                    <span id="bet-display" class="font-headline font-bold text-2xl text-[#f2ca50] w-12 text-center">$10</span>
+                    <button id="bet-plus" class="w-8 h-8 rounded-sm bg-[#0b3d1b] text-[#f2ca50] border border-[#4d4635]/30 flex items-center justify-center hover:bg-[#11421f]">+</button>
+                </div>
+            </div>
+
+            <!-- Spin Button -->
+            <div class="relative">
+                <button id="spin-btn" class="relative w-24 h-24 rounded-full border-[6px] border-[#d4af37] bg-[#0b3d1b] flex items-center justify-center shadow-2xl active:scale-90 transition-all duration-150 group">
+                    <span class="material-symbols-outlined text-5xl text-[#f2ca50] group-hover:rotate-180 transition-transform duration-700">refresh</span>
+                </button>
+                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 font-label text-[10px] font-bold text-[#f2ca50] uppercase tracking-[0.2em]">Spin</div>
+            </div>
+
+            <!-- Stats/Auto (Placeholder) -->
+            <div class="flex flex-col items-center">
+                <span class="font-label text-[10px] uppercase tracking-widest text-[#d0c5af] mb-1">Auto Spin</span>
+                <button id="auto-btn" class="bg-[#001204] px-6 py-3 rounded-sm border border-[#f2ca50]/40 text-[#f2ca50] font-label font-bold tracking-widest uppercase hover:bg-[#f2ca50] hover:text-[#3c2f00] transition-all">
+                    OFF
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Win Overlay -->
+    <div id="win-overlay" class="win-overlay fixed inset-0 z-[150] cursor-pointer">
+        <div class="flex flex-col items-center justify-center h-full">
+            <div class="text-center transform -rotate-2 pointer-events-none">
+                <h2 id="win-title" class="font-headline font-black italic text-6xl md:text-8xl text-[#f2ca50] drop-shadow-[0_0_30px_rgba(242,202,80,0.8)] tracking-tighter uppercase">
+                    BIG WIN!
+                </h2>
+                <div id="win-amount-box" class="mt-4 inline-block bg-[#f89c64] text-[#321200] px-8 py-3 font-label font-bold text-2xl rounded-sm shadow-xl border border-[#f2ca50]/30">
+                    +$5,000.00
+                </div>
+            </div>
+            <div class="mt-12 text-[#f2ca50] font-label font-bold tracking-widest uppercase border-b border-[#f2ca50] animate-pulse">Tap anywhere to continue</div>
+        </div>
+    </div>
+
+    <!-- Paytable Modal -->
+    <div id="paytable-modal" class="paytable-modal fixed inset-0 z-[110] bg-[#001806] p-8 overflow-y-auto">
+        <div class="max-w-2xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="font-headline text-4xl font-black italic text-[#f2ca50]">PAY TABLE</h2>
+                <button id="close-paytable" class="text-[#f2ca50]"><span class="material-symbols-outlined text-4xl">close</span></button>
+            </div>
+            <div id="paytable-content" class="grid grid-cols-1 gap-4">
+                <!-- Injected by JS -->
+            </div>
+            <div class="mt-12 p-6 bg-[#0b3d1b] rounded-xl text-center border border-[#f2ca50]/10">
+                <h4 class="font-headline text-lg text-[#f2ca50] mb-2 italic">House Rules</h4>
+                <p class="text-[#baf0be] text-sm">
+                    Only the highest win paid per line. Wins are calculated on the middle payline. 
+                    Wild substitutes for all symbols. RTP: ~92%.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-[#001204] rounded-t-lg shadow-2xl">
+        <button class="flex flex-col items-center justify-center bg-gradient-to-b from-[#ffe088] to-[#d4af37] text-[#001204] rounded-xl px-6 py-2 shadow-lg">
+            <span class="material-symbols-outlined">casino</span>
+            <span class="font-label font-semibold uppercase tracking-widest text-[10px]">PLAY</span>
+        </button>
+        <button id="nav-stats" class="flex flex-col items-center justify-center text-[#d0c5af]/60 px-6 py-2 hover:text-[#f2ca50]">
+            <span class="material-symbols-outlined">leaderboard</span>
+            <span class="font-label font-semibold uppercase tracking-widest text-[10px]">STATS</span>
+        </button>
+    </nav>
+
+    <script>
+        /**
+         * CONFIGURATION
+         */
+        const CONFIG = {
+            RTP: 0.92,
+            NEAR_MISS_RATE: 0.25,
+            STARTING_CREDITS: 1000,
+            BET_OPTIONS: [10, 25, 50, 100],
+            REEL_COUNT: 5,
+            ROW_COUNT: 3,
+            SYMBOL_HEIGHT: 100,
+            SPIN_DURATION: 2000,
+            REEL_DELAY: 200,
+            SUSPENSE_REEL: 2, // Index of reel to slow down (3rd reel)
+        };
+
+        const SYMBOLS = [
+            { id: 'wild', name: 'Golden Star', icon: 'stars', value: 50, weight: 2, color: '#f2ca50' },
+            { id: 'diamond', name: 'Diamond', icon: 'diamond', value: 25, weight: 5, color: '#baf0be' },
+            { id: 'seven', name: 'Lucky 7', icon: 'filter_7', value: 15, weight: 8, color: '#ffb4ab' },
+            { id: 'bell', name: 'Bell', icon: 'notifications', value: 10, weight: 12, color: '#fbbc00' },
+            { id: 'bar3', name: 'Triple Bar', icon: 'menu', value: 5, weight: 15, color: '#99907c' },
+            { id: 'bar2', name: 'Double Bar', icon: 'drag_handle', value: 3, weight: 20, color: '#99907c' },
+            { id: 'bar1', name: 'Single Bar', icon: 'remove', value: 2, weight: 25, color: '#99907c' },
+            { id: 'cherry', name: 'Cherry', icon: 'nutrition', value: 1, weight: 35, color: '#ff4444' }
+        ];
+
+        // Multipliers for 3, 4, 5 symbols
+        const PAYOUTS = {
+            3: 1,
+            4: 5,
+            5: 20
+        };
+
+        /**
+         * GAME STATE
+         */
+        let state = {
+            credits: CONFIG.STARTING_CREDITS,
+            betIndex: 0,
+            isSpinning: false,
+            autoSpin: false,
+            stats: {
+                spins: 0,
+                totalWon: 0,
+                biggestWin: 0
+            }
+        };
+
+        /**
+         * UI ELEMENTS
+         */
+        const balanceEl = document.getElementById('balance-display');
+        const betEl = document.getElementById('bet-display');
+        const spinBtn = document.getElementById('spin-btn');
+        const reelsGrid = document.getElementById('reels-grid');
+        const winOverlay = document.getElementById('win-overlay');
+        const winTitle = document.getElementById('win-title');
+        const winAmountBox = document.getElementById('win-amount-box');
+        const paytableModal = document.getElementById('paytable-modal');
+        const paytableContent = document.getElementById('paytable-content');
+        const autoBtn = document.getElementById('auto-btn');
+
+        /**
+         * INITIALIZATION
+         */
+        function init() {
+            // Loading Screen Logic
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingBar = document.getElementById('loading-bar');
+            
+            setTimeout(() => {
+                loadingBar.style.width = '100%';
+            }, 100);
+
+            setTimeout(() => {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }, 2500);
+
+            // Create Reels
+            for (let i = 0; i < CONFIG.REEL_COUNT; i++) {
+                const reel = document.createElement('div');
+                reel.className = 'reel-container h-full relative flex flex-col';
+                reel.innerHTML = `<div class="reel-strip absolute w-full" id="reel-${i}"></div>`;
+                reelsGrid.appendChild(reel);
+                populateReel(i);
+            }
+
+            // Populate Paytable
+            SYMBOLS.forEach(s => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-4 bg-[#0b3d1b] p-4 rounded-xl border-l-4 border-[#f2ca50] shadow-lg';
+                row.innerHTML = `
+                    <div class="w-16 h-16 flex-shrink-0 bg-[#001204] border border-[#f2ca50]/40 rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined text-3xl" style="color: ${s.color}; font-variation-settings: 'FILL' 1;">${s.icon}</span>
+                    </div>
+                    <div class="flex-1 grid grid-cols-3 gap-2">
+                        <div class="text-center"><span class="block text-[10px] font-label text-[#d0c5af]">5X</span><span class="font-headline font-bold text-[#f2ca50]">${s.value * PAYOUTS[5]}</span></div>
+                        <div class="text-center"><span class="block text-[10px] font-label text-[#d0c5af]">4X</span><span class="font-headline font-bold text-white">${s.value * PAYOUTS[4]}</span></div>
+                        <div class="text-center"><span class="block text-[10px] font-label text-[#d0c5af]">3X</span><span class="font-headline font-bold text-white">${s.value * PAYOUTS[3]}</span></div>
+                    </div>
+                `;
+                paytableContent.appendChild(row);
+            });
+
+            updateUI();
+        }
+
+        function populateReel(index, initialSymbols = null) {
+            const strip = document.getElementById(`reel-${index}`);
+            strip.innerHTML = '';
+            
+            // Create a long strip for animation
+            const count = 50;
+            for (let i = 0; i < count; i++) {
+                const symbol = initialSymbols ? initialSymbols[i % initialSymbols.length] : getRandomSymbol();
+                const el = createSymbolEl(symbol);
+                strip.appendChild(el);
+            }
+            // Set initial position to show middle 3
+            strip.style.transform = `translateY(-${(count - 3) * CONFIG.SYMBOL_HEIGHT}px)`;
+        }
+
+        function createSymbolEl(symbol) {
+            const el = document.createElement('div');
+            el.className = 'symbol';
+            el.innerHTML = `<span class="material-symbols-outlined" style="color: ${symbol.color}; font-variation-settings: 'FILL' 1;">${symbol.icon}</span>`;
+            el.dataset.id = symbol.id;
+            return el;
+        }
+
+        function getRandomSymbol() {
+            const totalWeight = SYMBOLS.reduce((acc, s) => acc + s.weight, 0);
+            let random = Math.random() * totalWeight;
+            for (const s of SYMBOLS) {
+                if (random < s.weight) return s;
+                random -= s.weight;
+            }
+            return SYMBOLS[SYMBOLS.length - 1];
+        }
+
+        /**
+         * GAME LOGIC
+         */
+        async function spin() {
+            if (state.isSpinning || state.credits < CONFIG.BET_OPTIONS[state.betIndex]) return;
+
+            state.isSpinning = true;
+            state.credits -= CONFIG.BET_OPTIONS[state.betIndex];
+            state.stats.spins++;
+            updateUI();
+
+            // 1. Generate Result
+            const result = generateResult();
+            
+            // 2. Animate Reels
+            const spinPromises = [];
+            for (let i = 0; i < CONFIG.REEL_COUNT; i++) {
+                spinPromises.push(animateReel(i, result[i]));
+            }
+
+            await Promise.all(spinPromises);
+
+            // 3. Calculate Win
+            const win = calculateWin(result);
+            handleWin(win);
+
+            state.isSpinning = false;
+            if (state.autoSpin && state.credits >= CONFIG.BET_OPTIONS[state.betIndex]) {
+                setTimeout(spin, 1000);
+            }
+        }
+
+        function generateResult() {
+            // Basic weighted generation
+            let result = [];
+            for (let i = 0; i < CONFIG.REEL_COUNT; i++) {
+                result.push([getRandomSymbol(), getRandomSymbol(), getRandomSymbol()]);
+            }
+
+            // Psychology Engine: Near Miss
+            const win = calculateWin(result);
+            if (win.amount === 0 && Math.random() < CONFIG.NEAR_MISS_RATE) {
+                // Force a near miss on the middle payline
+                // Match first 2 high value symbols
+                const highSymbols = SYMBOLS.slice(0, 3);
+                const target = highSymbols[Math.floor(Math.random() * highSymbols.length)];
+                result[0][1] = target;
+                result[1][1] = target;
+                // Reel 3 is one off
+                const neighbors = [0, 2];
+                result[2][neighbors[Math.floor(Math.random() * 2)]] = target;
+                result[2][1] = getRandomSymbol(); // Ensure it's not the target
+            }
+
+            return result;
+        }
+
+        async function animateReel(index, finalSymbols) {
+            const strip = document.getElementById(`reel-${index}`);
+            const duration = CONFIG.SPIN_DURATION + (index * CONFIG.REEL_DELAY);
+            
+            // Suspense Mechanic: Slow down reel 3 if 1 and 2 match
+            let finalDuration = duration;
+            // We'd need to know the result of 1 and 2 beforehand to trigger this perfectly
+            // For simplicity, we'll just add a random chance or check the generated result
+            
+            return new Promise(resolve => {
+                strip.style.transition = `transform ${finalDuration}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+                
+                // Add final symbols to the top of the strip
+                const newSymbols = [...finalSymbols];
+                for(let i=0; i<3; i++) {
+                    const el = createSymbolEl(newSymbols[i]);
+                    strip.insertBefore(el, strip.firstChild);
+                }
+
+                // Trigger animation
+                setTimeout(() => {
+                    strip.style.transform = `translateY(0px)`;
+                }, 50);
+
+                setTimeout(() => {
+                    // Cleanup and reset for next spin
+                    populateReel(index, finalSymbols);
+                    resolve();
+                }, finalDuration + 100);
+            });
+        }
+
+        function calculateWin(result) {
+            const payline = result.map(reel => reel[1]); // Middle row
+            let bestWin = { amount: 0, type: 'NONE', symbol: null, count: 0 };
+
+            // Check for matches starting from left
+            const firstSymbol = payline[0];
+            let count = 1;
+            for (let i = 1; i < CONFIG.REEL_COUNT; i++) {
+                if (payline[i].id === firstSymbol.id || payline[i].id === 'wild' || firstSymbol.id === 'wild') {
+                    count++;
+                } else {
+                    break;
+                }
+            }
+
+            if (count >= 3) {
+                // If wild was the first symbol, we need to determine the actual symbol matched
+                let actualSymbol = firstSymbol;
+                if (firstSymbol.id === 'wild') {
+                    for(let i=1; i<count; i++) {
+                        if (payline[i].id !== 'wild') {
+                            actualSymbol = payline[i];
+                            break;
+                        }
+                    }
+                }
+
+                const multiplier = PAYOUTS[count] || 0;
+                const winAmount = actualSymbol.value * multiplier * CONFIG.BET_OPTIONS[state.betIndex];
+                
+                bestWin = {
+                    amount: winAmount,
+                    symbol: actualSymbol,
+                    count: count
+                };
+            }
+
+            // Classify Win
+            const bet = CONFIG.BET_OPTIONS[state.betIndex];
+            if (bestWin.amount === 0) bestWin.type = 'NONE';
+            else if (bestWin.amount < bet) bestWin.type = 'LDW';
+            else if (bestWin.amount < bet * 3) bestWin.type = 'SMALL';
+            else if (bestWin.amount < bet * 10) bestWin.type = 'BIG';
+            else bestWin.type = 'MEGA';
+
+            return bestWin;
+        }
+
+        function handleWin(win) {
+            if (win.amount > 0) {
+                state.credits += win.amount;
+                state.stats.totalWon += win.amount;
+                if (win.amount > state.stats.biggestWin) state.stats.biggestWin = win.amount;
+                
+                showCelebration(win);
+            }
+            updateUI();
+        }
+
+        function showCelebration(win) {
+            const bet = CONFIG.BET_OPTIONS[state.betIndex];
+            
+            if (win.type === 'NONE') return;
+
+            winOverlay.classList.add('active');
+            winAmountBox.innerText = `+$${win.amount.toLocaleString()}`;
+
+            switch(win.type) {
+                case 'LDW':
+                case 'SMALL':
+                    winTitle.innerText = 'WIN!';
+                    winTitle.className = 'font-headline font-black italic text-6xl text-[#f2ca50] drop-shadow-md uppercase';
+                    winAmountBox.className = 'mt-4 inline-block bg-[#0b3d1b] text-[#f2ca50] px-6 py-2 font-label font-bold text-xl rounded-sm border border-[#f2ca50]/30';
+                    break;
+                case 'BIG':
+                    winTitle.innerText = 'BIG WIN!';
+                    winTitle.className = 'font-headline font-black italic text-7xl text-[#f2ca50] drop-shadow-[0_0_20px_rgba(242,202,80,0.8)] uppercase';
+                    winAmountBox.className = 'mt-4 inline-block bg-[#f89c64] text-[#321200] px-8 py-3 font-label font-bold text-2xl rounded-sm shadow-xl border border-[#f2ca50]/30';
+                    break;
+                case 'MEGA':
+                    winTitle.innerText = 'MEGA WIN!';
+                    winTitle.className = 'font-headline font-black italic text-8xl text-[#f2ca50] drop-shadow-[0_0_40px_rgba(242,202,80,1)] uppercase animate-bounce-custom';
+                    winAmountBox.className = 'mt-4 inline-block bg-gradient-to-r from-[#ffe088] to-[#d4af37] text-[#001204] px-10 py-4 font-label font-bold text-3xl rounded-sm shadow-2xl border-2 border-white/20';
+                    break;
+            }
+        }
+
+        /**
+         * UI UPDATES
+         */
+        function updateUI() {
+            balanceEl.innerText = `$${state.credits.toLocaleString()}`;
+            betEl.innerText = `$${CONFIG.BET_OPTIONS[state.betIndex]}`;
+            spinBtn.disabled = state.isSpinning || state.credits < CONFIG.BET_OPTIONS[state.betIndex];
+            spinBtn.style.opacity = spinBtn.disabled ? '0.5' : '1';
+            autoBtn.innerText = state.autoSpin ? 'ON' : 'OFF';
+            autoBtn.className = state.autoSpin ? 
+                'bg-[#f2ca50] px-6 py-3 rounded-sm border border-[#f2ca50]/40 text-[#3c2f00] font-label font-bold tracking-widest uppercase' :
+                'bg-[#001204] px-6 py-3 rounded-sm border border-[#f2ca50]/40 text-[#f2ca50] font-label font-bold tracking-widest uppercase hover:bg-[#f2ca50] hover:text-[#3c2f00] transition-all';
+        }
+
+        /**
+         * EVENT HANDLERS
+         */
+        spinBtn.addEventListener('click', spin);
+
+        document.getElementById('bet-plus').addEventListener('click', () => {
+            if (state.isSpinning) return;
+            state.betIndex = (state.betIndex + 1) % CONFIG.BET_OPTIONS.length;
+            updateUI();
+        });
+
+        document.getElementById('bet-minus').addEventListener('click', () => {
+            if (state.isSpinning) return;
+            state.betIndex = (state.betIndex - 1 + CONFIG.BET_OPTIONS.length) % CONFIG.BET_OPTIONS.length;
+            updateUI();
+        });
+
+        document.getElementById('auto-btn').addEventListener('click', () => {
+            state.autoSpin = !state.autoSpin;
+            updateUI();
+            if (state.autoSpin && !state.isSpinning) spin();
+        });
+
+        document.getElementById('win-overlay').addEventListener('click', () => {
+            winOverlay.classList.remove('active');
+        });
+
+        document.getElementById('paytable-btn').addEventListener('click', () => {
+            paytableModal.classList.add('active');
+        });
+
+        document.getElementById('close-paytable').addEventListener('click', () => {
+            paytableModal.classList.remove('active');
+        });
+
+        document.getElementById('nav-stats').addEventListener('click', () => {
+            alert(`Session Stats:\nSpins: ${state.stats.spins}\nTotal Won: $${state.stats.totalWon}\nBiggest Win: $${state.stats.biggestWin}`);
+        });
+
+        // Initialize
+        init();
+
+    </script>
+</body>
+</html>
