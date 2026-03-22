@@ -695,9 +695,9 @@
 
         // Multipliers for 3, 4, 5 symbols
         const PAYOUTS = {
-            3: 1,
-            4: 5,
-            5: 20
+            3: 3,
+            4: 15,
+            5: 90
         };
 
         /**
@@ -1186,12 +1186,20 @@
             let bestWin = { amount: 0, type: 'NONE', symbol: null, count: 0, winningIndices: [] };
 
             // Check for matches starting from left
-            const firstSymbol = payline[0];
+            let matchSymbolId = payline[0].id;
             let count = 1;
             let winningIndices = [0];
 
             for (let i = 1; i < CONFIG.REEL_COUNT; i++) {
-                if (payline[i].id === firstSymbol.id || payline[i].id === 'wild' || firstSymbol.id === 'wild') {
+                const currentSymbol = payline[i];
+                if (matchSymbolId === 'wild') {
+                    // If we started with a wild, the next symbol determines what we're matching
+                    if (currentSymbol.id !== 'wild') {
+                        matchSymbolId = currentSymbol.id;
+                    }
+                    count++;
+                    winningIndices.push(i);
+                } else if (currentSymbol.id === matchSymbolId || currentSymbol.id === 'wild') {
                     count++;
                     winningIndices.push(i);
                 } else {
@@ -1200,9 +1208,9 @@
             }
 
             if (count >= 3) {
-                // If wild was the first symbol, we need to determine the actual symbol matched
-                let actualSymbol = firstSymbol;
-                if (firstSymbol.id === 'wild') {
+                // Determine the actual symbol for payout calculation
+                let actualSymbol = payline[0];
+                if (actualSymbol.id === 'wild') {
                     for(let i=1; i<count; i++) {
                         if (payline[i].id !== 'wild') {
                             actualSymbol = payline[i];
