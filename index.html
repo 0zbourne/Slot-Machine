@@ -15,9 +15,24 @@
             --surface-variant: #0b3d1b;
             --on-surface: #baf0be;
             --gold-gradient: linear-gradient(180deg, #ffe088 0%, #d4af37 100%);
-            --header-h: clamp(44px, 7vh, 72px);
-            --footer-h: clamp(52px, 9vh, 88px);
-            --ui-scale: calc(var(--header-h) / 64);
+            
+            /* Mobile Defaults (The "Perfect" Baseline) */
+            --header-h: 48px;
+            --footer-h: 64px;
+            --symbol-h: 60px;
+            --ui-scale: 0.85;
+            --spin-size: 80px;
+        }
+
+        /* Desktop & Tablet Scaling */
+        @media (min-width: 768px) and (min-height: 501px) {
+            :root {
+                --header-h: clamp(64px, 7vh, 80px);
+                --footer-h: clamp(80px, 9vh, 100px);
+                --symbol-h: clamp(80px, 10vw, 120px);
+                --ui-scale: calc(var(--header-h) / 80);
+                --spin-size: clamp(100px, 15vh, 140px);
+            }
         }
 
         /* Dynamic Scaling Utilities */
@@ -72,17 +87,16 @@
         }
 
         .symbol {
-            height: 60px;
+            height: var(--symbol-h);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: calc(var(--symbol-h) * 0.5);
         }
 
         @media (min-width: 640px) and (min-height: 501px) {
             .symbol {
-                height: 100px;
-                font-size: 3rem;
+                font-size: calc(var(--symbol-h) * 0.6);
             }
         }
 
@@ -247,7 +261,7 @@
         @media (max-height: 500px) {
             :root {
                 --header-h: clamp(36px, 10vh, 48px);
-                --footer-h: clamp(44px, 12vh, 56px);
+                --footer-h: clamp(60px, 15vh, 72px);
             }
             main {
                 padding-top: var(--header-h);
@@ -261,13 +275,13 @@
                 border-width: 2px;
             }
             #reels-grid {
-                height: 180px !important;
+                height: calc(var(--symbol-h) * 3) !important;
             }
             .symbol {
-                height: 60px !important;
+                height: var(--symbol-h) !important;
             }
             .symbol .material-symbols-outlined {
-                font-size: 36px !important;
+                font-size: calc(var(--symbol-h) * 0.6) !important;
             }
             .pill-container {
                 padding: 0.1rem 0.5rem !important;
@@ -303,20 +317,88 @@
             box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
         }
 
-        .loyalty-bar {
-            background: rgba(0, 18, 4, 0.8);
-            border: 1px solid rgba(242, 202, 80, 0.2);
+        .win-display-box {
+            background: radial-gradient(circle at center, #0d4a21, #001204);
+            border: 2px solid #f2ca50 !important;
+            box-shadow: 0 0 15px rgba(242, 202, 80, 0.3);
+        }
+
+        .max-bet-glow {
+            box-shadow: 0 0 15px rgba(242, 202, 80, 0.4);
+        }
+
+        /* New Spin Button Style */
+        .spin-button-outer {
+            background: var(--gold-gradient);
+            padding: 4px;
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border: none;
+        }
+
+        .spin-button-inner {
+            background: radial-gradient(circle at 30% 30%, #11421f, #001204);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
             overflow: hidden;
         }
 
-        .loyalty-progress {
-            background: var(--gold-gradient);
-            box-shadow: 0 0 10px rgba(242, 202, 80, 0.5);
+        .spin-button-outer:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.9);
+        }
+
+        .spin-button-outer:active {
+            transform: scale(0.92) translateY(0);
         }
 
         .win-display-box {
-            background: radial-gradient(circle at center, rgba(242, 202, 80, 0.15) 0%, transparent 70%);
-            border: 1px solid rgba(242, 202, 80, 0.2);
+            background: radial-gradient(circle at center, #0d4a21, #001204);
+            border: 2px solid #f2ca50 !important;
+            box-shadow: 0 0 15px rgba(242, 202, 80, 0.3);
+        }
+
+        .max-bet-glow {
+            box-shadow: 0 0 15px rgba(242, 202, 80, 0.4);
+        }
+
+        /* New Spin Button Style */
+        .spin-button-outer {
+            background: var(--gold-gradient);
+            padding: 4px;
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border: none;
+        }
+
+        .spin-button-inner {
+            background: radial-gradient(circle at 30% 30%, #11421f, #001204);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spin-button-outer:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.9);
+        }
+
+        .spin-button-outer:active {
+            transform: scale(0.92) translateY(0);
         }
     </style>
 </head>
@@ -367,7 +449,7 @@
             <div class="payline-indicator"></div>
             
             <!-- Reels Grid -->
-            <div class="grid grid-cols-5 gap-1 h-[180px] sm:h-[300px] relative" id="reels-grid">
+            <div class="grid grid-cols-5 gap-1 relative" style="height: calc(var(--symbol-h) * 3);" id="reels-grid">
                 <!-- Reels will be injected here -->
             </div>
         </div>
@@ -376,40 +458,40 @@
     <!-- Bottom Bar -->
     <footer style="height: var(--footer-h);" class="fixed bottom-0 w-full z-40 bar-bg border-t flex items-center justify-between px-4 sm:px-8 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
         <!-- Bet Controls -->
-        <div class="flex items-center gap-2 footer-item">
-            <div class="flex flex-col items-start h-full justify-center">
-                <span class="font-label text-[0.6em] uppercase tracking-widest text-[#f2ca50]/60 ml-2">Bet</span>
-                <div class="pill-container flex items-center gap-1 sm:gap-3 p-0.5 h-[80%] rounded-full">
-                    <button id="bet-minus" class="bet-btn aspect-square h-[90%] rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/20 flex items-center justify-center hover:bg-[#11421f] transition-all">-</button>
-                    <span id="bet-display" class="font-headline font-bold text-[#f2ca50] min-w-[2em] sm:min-w-[3em] text-center">$10</span>
-                    <button id="bet-plus" class="bet-btn aspect-square h-[90%] rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/20 flex items-center justify-center hover:bg-[#11421f] transition-all">+</button>
+        <div class="flex items-center gap-3 footer-item">
+            <div class="pill-container flex items-center gap-2 sm:gap-4 px-2 h-[92%] rounded-full py-1">
+                <button id="bet-minus" class="bet-btn aspect-square h-full rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/40 flex items-center justify-center hover:bg-[#11421f] transition-all shadow-lg active:scale-90">-</button>
+                <div class="flex flex-col items-center px-2">
+                    <span class="font-label text-[8px] sm:text-[10px] uppercase tracking-tighter text-[#f2ca50]/50 leading-none mb-0.5">Bet</span>
+                    <span id="bet-display" class="font-headline font-bold text-[#f2ca50] min-w-[2.5em] sm:min-w-[3.5em] text-center leading-none">$10</span>
                 </div>
+                <button id="bet-plus" class="bet-btn aspect-square h-full rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/40 flex items-center justify-center hover:bg-[#11421f] transition-all shadow-lg active:scale-90">+</button>
             </div>
             
-            <button id="max-bet-btn" class="hidden sm:flex flex-col items-center justify-center aspect-square h-[80%] rounded-lg bg-[#0b3d1b] border border-[#f2ca50]/30 text-[#f2ca50] hover:bg-[#11421f] transition-all group">
-                <span class="font-label font-bold text-[0.5em] uppercase tracking-tighter">Max</span>
-                <span class="font-label font-black text-[0.6em] uppercase">Bet</span>
+            <button id="max-bet-btn" class="flex flex-col items-center justify-center h-[92%] px-4 rounded-xl bg-gradient-to-b from-[#f2ca50] to-[#d4af37] text-[#001806] hover:brightness-110 transition-all max-bet-glow active:scale-95">
+                <span class="font-label font-black text-xs uppercase tracking-tighter">MAX</span>
+                <span class="font-label font-black text-[10px] uppercase -mt-1">BET</span>
             </button>
         </div>
 
         <!-- Win Display -->
-        <div class="flex flex-col items-center footer-item flex-1 max-w-[120px] sm:max-w-xs mx-2 sm:mx-4 justify-center">
-            <span class="font-label text-[0.6em] uppercase tracking-widest text-[#f2ca50]/60">Last Win</span>
-            <div class="w-full h-[80%] rounded-lg win-display-box flex items-center justify-center">
-                <span id="bottom-win-display" class="font-headline font-black text-[#f2ca50] tracking-tight">$0</span>
+        <div class="flex flex-col items-center footer-item flex-1 max-w-[140px] sm:max-w-xs mx-2 sm:mx-4 justify-center">
+            <div class="w-full h-[92%] rounded-xl win-display-box flex flex-col items-center justify-center border-2 px-4 py-1">
+                <span class="font-label text-[8px] sm:text-[9px] uppercase tracking-[0.2em] text-[#f2ca50]/70 mb-0.5">Win Amount</span>
+                <span id="bottom-win-display" class="font-headline font-black text-[#f2ca50] text-xl tracking-tight leading-none">$0</span>
             </div>
         </div>
 
         <!-- Spacer for Spin Button -->
-        <div class="w-16 sm:w-32"></div>
+        <div class="w-20 sm:w-32"></div>
     </footer>
 
-    <!-- Corner Spin Button -->
-    <div class="fixed bottom-0 right-0 z-50">
-        <button id="spin-btn" class="relative w-[15vh] h-[15vh] max-w-[140px] max-h-[140px] min-w-[80px] min-h-[80px] rounded-tl-full border-t-4 border-l-4 border-[#d4af37] bg-gradient-to-br from-[#0b3d1b] to-[#001204] flex items-end justify-end p-[10%] shadow-[-10px_-10px_30px_rgba(0,0,0,0.5)] active:scale-95 transition-all duration-150 group overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-tl from-[#f2ca50]/10 to-transparent"></div>
-            <span class="material-symbols-outlined text-[4vh] sm:text-[8vh] text-[#f2ca50] group-hover:rotate-180 transition-transform duration-700 z-10">refresh</span>
-            <div class="absolute top-[20%] left-[20%] font-label text-[1.5vh] font-bold text-[#f2ca50] uppercase tracking-[0.2em] -rotate-45">Spin</div>
+    <!-- Redesigned Spin Button -->
+    <div class="fixed bottom-4 right-4 z-50">
+        <button id="spin-btn" class="spin-button-outer" style="width: var(--spin-size); height: var(--spin-size);">
+            <div class="spin-button-inner w-full h-full">
+                <span class="font-headline font-black text-[#f2ca50] uppercase tracking-[0.2em]" style="font-size: calc(var(--spin-size) * 0.22);">SPIN</span>
+            </div>
         </button>
     </div>
 
@@ -461,7 +543,9 @@
             BET_OPTIONS: [10, 25, 50, 100],
             REEL_COUNT: 5,
             ROW_COUNT: 3,
-            SYMBOL_HEIGHT: (window.innerWidth < 640 || window.innerHeight < 500) ? 60 : 100,
+            get SYMBOL_HEIGHT() {
+                return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--symbol-h'));
+            },
             SPIN_DURATION: 2000,
             REEL_DELAY: 200,
             SUSPENSE_REEL: 2, // Index of reel to slow down (3rd reel)
@@ -569,7 +653,6 @@
             strip.innerHTML = '';
             
             const count = 40;
-            const symbolHeight = CONFIG.SYMBOL_HEIGHT;
             
             for (let i = 0; i < count; i++) {
                 let symbol;
@@ -589,14 +672,13 @@
             
             // Show the last 3 symbols (index count-3, count-2, count-1)
             // count-3 is the top one, count-2 is the middle (payline)
-            strip.style.transform = `translateY(-${(count - 3) * symbolHeight}px)`;
+            strip.style.transform = `translateY(calc(-1 * (${count} - 3) * var(--symbol-h)))`;
         }
 
         function createSymbolEl(symbol) {
             const el = document.createElement('div');
             el.className = 'symbol';
-            el.style.height = `${CONFIG.SYMBOL_HEIGHT}px`;
-            el.innerHTML = `<span class="material-symbols-outlined" style="color: ${symbol.color}; font-variation-settings: 'FILL' 1; font-size: ${CONFIG.SYMBOL_HEIGHT * 0.7}px">${symbol.icon}</span>`;
+            el.innerHTML = `<span class="material-symbols-outlined" style="color: ${symbol.color}; font-variation-settings: 'FILL' 1;">${symbol.icon}</span>`;
             el.dataset.id = symbol.id;
             return el;
         }
@@ -745,7 +827,6 @@
             const strip = document.getElementById(`reel-${index}`);
             if (!strip) return Promise.resolve();
 
-            const symbolHeight = CONFIG.SYMBOL_HEIGHT;
             const duration = durationOverride || (CONFIG.SPIN_DURATION + (index * CONFIG.REEL_DELAY));
             const easing = easingOverride || 'cubic-bezier(0.45, 0.05, 0.55, 0.95)';
             
@@ -756,7 +837,7 @@
                 for (let i = 0; i < 3; i++) {
                     const symbol = finalSymbols[i];
                     const el = children[i];
-                    el.innerHTML = `<span class="material-symbols-outlined" style="color: ${symbol.color}; font-variation-settings: 'FILL' 1; font-size: ${symbolHeight * 0.7}px">${symbol.icon}</span>`;
+                    el.innerHTML = `<span class="material-symbols-outlined" style="color: ${symbol.color}; font-variation-settings: 'FILL' 1;">${symbol.icon}</span>`;
                     el.dataset.id = symbol.id;
                 }
 
@@ -946,11 +1027,13 @@
                 maxBetBtn.style.opacity = isDisabled ? '0.5' : '1';
             }
             
-            const icon = spinBtn.querySelector('.material-symbols-outlined');
+            const spinText = spinBtn.querySelector('span');
             if (state.isSpinning) {
-                icon.classList.add('animate-spin');
+                spinBtn.classList.add('animate-pulse');
+                if (spinText) spinText.innerText = '...';
             } else {
-                icon.classList.remove('animate-spin');
+                spinBtn.classList.remove('animate-pulse');
+                if (spinText) spinText.innerText = 'SPIN';
             }
         }
 
