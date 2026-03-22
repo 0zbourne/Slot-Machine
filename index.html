@@ -147,6 +147,31 @@
             position: relative;
         }
 
+        /* Win Celebration Effects */
+        @keyframes win-flash {
+            0%, 100% { border-color: #f2ca50; box-shadow: 0 0 20px rgba(242, 202, 80, 0.4); }
+            50% { border-color: #fff; box-shadow: 0 0 50px rgba(242, 202, 80, 0.8), inset 0 0 20px rgba(242, 202, 80, 0.4); }
+        }
+        .win-active {
+            animation: win-flash 0.5s infinite !important;
+        }
+
+        @keyframes particle-float {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+        .win-particle {
+            position: absolute;
+            background: #f2ca50;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 160;
+            animation: particle-float 2s linear forwards;
+        }
+
         /* Suspense Effects */
         .suspense-active {
             border-color: #ff4444 !important;
@@ -423,10 +448,15 @@
             </span>
         </div>
 
-        <!-- Info -->
-        <button id="paytable-btn" class="aspect-square header-item rounded-full bg-[#0b3d1b] border border-[#f2ca50]/30 flex items-center justify-center text-[#f2ca50] hover:bg-[#11421f] shadow-xl transition-all">
-            <span class="material-symbols-outlined icon-scale">info</span>
-        </button>
+        <!-- Info & Sound -->
+        <div class="flex items-center gap-2 header-item">
+            <button id="mute-btn" class="aspect-square h-full rounded-full bg-[#0b3d1b] border border-[#f2ca50]/30 flex items-center justify-center text-[#f2ca50] hover:bg-[#11421f] shadow-xl transition-all">
+                <span id="mute-icon" class="material-symbols-outlined icon-scale">volume_up</span>
+            </button>
+            <button id="paytable-btn" class="aspect-square h-full rounded-full bg-[#0b3d1b] border border-[#f2ca50]/30 flex items-center justify-center text-[#f2ca50] hover:bg-[#11421f] shadow-xl transition-all">
+                <span class="material-symbols-outlined icon-scale">info</span>
+            </button>
+        </div>
     </header>
 
     <!-- Main Game Area -->
@@ -594,6 +624,128 @@
         const winTitle = document.getElementById('win-title');
         const winAmountBox = document.getElementById('win-amount-box');
         const bottomWinDisplay = document.getElementById('bottom-win-display');
+        const muteBtn = document.getElementById('mute-btn');
+        const muteIcon = document.getElementById('mute-icon');
+
+        // Sound Manager using Web Audio API
+        class SoundManager {
+            constructor() {
+                this.ctx = null;
+                this.isMuted = false;
+                this.masterGain = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.connect(this.ctx.destination);
+                this.masterGain.gain.value = 0.3;
+            }
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                if (this.masterGain) {
+                    this.masterGain.gain.value = this.isMuted ? 0 : 0.3;
+                }
+                return this.isMuted;
+            }
+
+            createOscillator(freq, type = 'sine', duration = 0.1, gainValue = 0.1) {
+                if (!this.ctx || this.isMuted) return;
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(gainValue, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playSpinStart() {
+                this.init();
+                // Mechanical "thud"
+                this.createOscillator(150, 'square', 0.15, 0.1);
+                this.createOscillator(80, 'sine', 0.2, 0.2);
+            }
+
+            playReelStop(index) {
+                this.init();
+                // Crisp "click"
+                const freq = 200 - (index * 20);
+                this.createOscillator(freq, 'triangle', 0.1, 0.15);
+            }
+
+            playNearMiss() {
+                this.init();
+                // Tense high-pitched ping
+                this.createOscillator(880, 'sine', 0.5, 0.1);
+                setTimeout(() => this.createOscillator(932, 'sine', 0.4, 0.08), 50);
+            }
+
+            playLDW() {
+                this.init();
+                // Light win sound
+                [440, 554, 659].forEach((f, i) => {
+                    setTimeout(() => this.createOscillator(f, 'sine', 0.3, 0.1), i * 100);
+                });
+            }
+
+            playSmallWin() {
+                this.init();
+                // Cheerful ding
+                [523, 659, 783, 1046].forEach((f, i) => {
+                    setTimeout(() => this.createOscillator(f, 'sine', 0.4, 0.1), i * 80);
+                });
+            }
+
+            playBigWin() {
+                this.init();
+                // Triumphant jingle
+                const notes = [523, 659, 783, 1046, 1318, 1567];
+                notes.forEach((f, i) => {
+                    setTimeout(() => this.createOscillator(f, 'square', 0.5, 0.05), i * 120);
+                });
+            }
+
+            playMegaWin() {
+                this.init();
+                // Epic crescendo
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        const f = 200 + (i * 100);
+                        this.createOscillator(f, 'sawtooth', 0.6, 0.03);
+                    }, i * 100);
+                }
+            }
+
+            playBonusTrigger() {
+                this.init();
+                // Magical power-up
+                for (let i = 0; i < 10; i++) {
+                    setTimeout(() => {
+                        const f = 1000 - (i * 50);
+                        this.createOscillator(f, 'sine', 0.2, 0.1);
+                    }, i * 50);
+                }
+            }
+        }
+
+        const sounds = new SoundManager();
+
+        muteBtn.addEventListener('click', () => {
+            const isMuted = sounds.toggleMute();
+            muteIcon.innerText = isMuted ? 'volume_off' : 'volume_up';
+        });
         const paytableModal = document.getElementById('paytable-modal');
         const paytableContent = document.getElementById('paytable-content');
 
@@ -714,6 +866,7 @@
 
             try {
                 console.log("Spin started");
+                sounds.playSpinStart();
                 state.isSpinning = true;
                 state.credits -= CONFIG.BET_OPTIONS[state.betIndex];
                 state.stats.spins++;
@@ -754,6 +907,7 @@
                 // Trigger visual suspense effects after Reel 1 settles
                 if (isSuspense) {
                     setTimeout(() => {
+                        sounds.playNearMiss();
                         machine.classList.add('suspense-active');
                         highlightSuspenseSymbols([0, 1]);
                         
@@ -796,6 +950,24 @@
 
         function removeSuspenseHighlights() {
             document.querySelectorAll('.symbol').forEach(el => el.classList.remove('suspense-highlight'));
+        }
+
+        function createWinParticles() {
+            const container = document.getElementById('win-overlay');
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const p = document.createElement('div');
+                    p.className = 'win-particle';
+                    p.style.left = Math.random() * 100 + 'vw';
+                    p.style.top = '100vh';
+                    p.style.background = Math.random() > 0.5 ? '#f2ca50' : '#fff';
+                    p.style.width = (Math.random() * 6 + 2) + 'px';
+                    p.style.height = p.style.width;
+                    p.style.animationDuration = (Math.random() * 1 + 1) + 's';
+                    document.body.appendChild(p);
+                    setTimeout(() => p.remove(), 2000);
+                }, i * 50);
+            }
         }
 
         function generateResult() {
@@ -848,6 +1020,7 @@
                 strip.style.transform = `translateY(0px)`;
 
                 setTimeout(() => {
+                    sounds.playReelStop(index);
                     // Cleanup and reset for next spin (move back to bottom seamlessly)
                     populateReel(index, finalSymbols);
                     resolve();
@@ -911,14 +1084,24 @@
             if (!win || typeof win.amount !== 'number' || isNaN(win.amount)) return;
             
             if (win.amount > 0) {
+                // Psychology Engine: Losses Disguised as Wins (LDWs)
+                // If win < bet, we still treat it as a celebratory event to maintain engagement
+                const isLDW = win.type === 'LDW';
+                if (isLDW) sounds.playLDW();
+                
+                const machine = document.querySelector('.slot-machine-container');
+                
                 // 1. Tallying Phase: Highlight winning symbols
                 const reels = document.querySelectorAll('.reel-strip');
                 
                 // Show a "Tallying..." indicator
                 const tallyIndicator = document.createElement('div');
                 tallyIndicator.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] bg-[#f2ca50] text-[#001204] px-6 py-2 rounded-full font-label font-bold text-xl shadow-2xl animate-pulse pointer-events-none';
-                tallyIndicator.innerText = 'TALLYING WIN...';
+                tallyIndicator.innerText = isLDW ? 'WIN DETECTED!' : 'TALLYING WIN...';
                 document.body.appendChild(tallyIndicator);
+
+                machine.classList.add('win-active');
+                createWinParticles();
 
                 win.winningIndices.forEach(reelIdx => {
                     const strip = reels[reelIdx];
@@ -941,6 +1124,7 @@
                 
                 // Remove tally indicator
                 tallyIndicator.remove();
+                machine.classList.remove('win-active');
 
                 state.credits += win.amount;
                 state.stats.totalWon += win.amount;
@@ -970,16 +1154,19 @@
             switch(win.type) {
                 case 'LDW':
                 case 'SMALL':
+                    sounds.playSmallWin();
                     winTitle.innerText = 'WIN!';
                     winTitle.className = `font-headline font-black italic ${isMobile ? 'text-4xl' : 'text-6xl'} text-[#f2ca50] drop-shadow-md uppercase`;
                     winAmountBox.className = `mt-4 inline-block bg-[#0b3d1b] text-[#f2ca50] ${isMobile ? 'px-4 py-1 text-lg' : 'px-6 py-2 text-xl'} font-label font-bold rounded-sm border border-[#f2ca50]/30`;
                     break;
                 case 'BIG':
+                    sounds.playBigWin();
                     winTitle.innerText = 'BIG WIN!';
                     winTitle.className = `font-headline font-black italic ${isMobile ? 'text-5xl' : 'text-7xl'} text-[#f2ca50] drop-shadow-[0_0_20px_rgba(242,202,80,0.8)] uppercase`;
                     winAmountBox.className = `mt-4 inline-block bg-[#f89c64] text-[#321200] ${isMobile ? 'px-6 py-2 text-xl' : 'px-8 py-3 text-2xl'} font-label font-bold rounded-sm shadow-xl border border-[#f2ca50]/30`;
                     break;
                 case 'MEGA':
+                    sounds.playMegaWin();
                     winTitle.innerText = 'MEGA WIN!';
                     winTitle.className = `font-headline font-black italic ${isMobile ? 'text-6xl' : 'text-8xl'} text-[#f2ca50] drop-shadow-[0_0_40px_rgba(242,202,80,1)] uppercase animate-bounce-custom`;
                     winAmountBox.className = `mt-4 inline-block bg-gradient-to-r from-[#ffe088] to-[#d4af37] text-[#001204] ${isMobile ? 'px-8 py-3 text-2xl' : 'px-10 py-4 text-3xl'} font-label font-bold rounded-sm shadow-2xl border-2 border-white/20`;
