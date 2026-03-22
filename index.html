@@ -15,6 +15,22 @@
             --surface-variant: #0b3d1b;
             --on-surface: #baf0be;
             --gold-gradient: linear-gradient(180deg, #ffe088 0%, #d4af37 100%);
+            --header-h: clamp(44px, 7vh, 72px);
+            --footer-h: clamp(52px, 9vh, 88px);
+            --ui-scale: calc(var(--header-h) / 64);
+        }
+
+        /* Dynamic Scaling Utilities */
+        .header-item {
+            height: 70%;
+            font-size: calc(1rem * var(--ui-scale));
+        }
+        .footer-item {
+            height: 70%;
+            font-size: calc(1rem * var(--ui-scale));
+        }
+        .icon-scale {
+            font-size: calc(1.5rem * var(--ui-scale)) !important;
         }
 
         body {
@@ -229,9 +245,13 @@
 
         /* Landscape Optimizations */
         @media (max-height: 500px) {
+            :root {
+                --header-h: clamp(36px, 10vh, 48px);
+                --footer-h: clamp(44px, 12vh, 56px);
+            }
             main {
-                padding-top: 2.5rem;
-                padding-bottom: 2.5rem;
+                padding-top: var(--header-h);
+                padding-bottom: var(--footer-h);
                 justify-content: center;
                 gap: 0.1rem;
             }
@@ -249,38 +269,25 @@
             .symbol .material-symbols-outlined {
                 font-size: 36px !important;
             }
-            header {
-                height: 2.5rem !important;
-            }
-            footer {
-                height: 2.5rem !important;
-            }
             .pill-container {
                 padding: 0.1rem 0.5rem !important;
             }
             #spin-btn {
-                width: 5rem !important;
-                height: 5rem !important;
+                width: 6rem !important;
+                height: 6rem !important;
             }
             #spin-btn .material-symbols-outlined {
-                font-size: 2rem !important;
+                font-size: 2.5rem !important;
                 margin-top: 0.5rem;
                 margin-left: 0.5rem;
             }
             .win-display-box {
                 padding: 0.1rem !important;
             }
-            #bottom-win-display {
-                font-size: 1rem !important;
-            }
             .bet-btn {
                 width: 1.5rem !important;
                 height: 1.5rem !important;
                 font-size: 0.75rem !important;
-            }
-            #bet-display {
-                font-size: 0.9rem !important;
-                width: 2.5rem !important;
             }
         }
 
@@ -325,27 +332,23 @@
     </div>
 
     <!-- Top Bar -->
-    <header class="fixed top-0 w-full z-50 h-12 sm:h-16 bar-bg border-b flex items-center justify-between px-4 sm:px-8 shadow-2xl">
+    <header style="height: var(--header-h);" class="fixed top-0 w-full z-50 bar-bg border-b flex items-center justify-between px-4 sm:px-8 shadow-2xl">
         <!-- Balance -->
-        <div class="flex items-center gap-2 pill-container px-3 h-8 sm:h-10 rounded-full">
-            <span class="material-symbols-outlined text-[#f2ca50] text-lg sm:text-2xl" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
-            <span id="balance-display" class="font-headline font-bold text-sm sm:text-xl tracking-tight text-[#f2ca50]">$1,000</span>
+        <div class="flex items-center gap-2 pill-container px-3 header-item rounded-full">
+            <span class="material-symbols-outlined text-[#f2ca50] icon-scale" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+            <span id="balance-display" class="font-headline font-bold tracking-tight text-[#f2ca50] header-item flex items-center">
+                $1,000
+            </span>
         </div>
 
-        <!-- VIP Shop Button (Hidden on mobile) -->
-        <button class="hidden lg:flex items-center gap-2 bg-gradient-to-b from-[#ffe088] to-[#d4af37] text-[#001204] px-6 h-10 rounded-full font-label font-bold text-xs tracking-widest uppercase shadow-lg hover:brightness-110 transition-all">
-            <span class="material-symbols-outlined text-sm">shopping_cart</span>
-            VIP SHOP
-        </button>
-
         <!-- Info -->
-        <button id="paytable-btn" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#0b3d1b] border border-[#f2ca50]/30 flex items-center justify-center text-[#f2ca50] hover:bg-[#11421f] shadow-xl transition-all">
-            <span class="material-symbols-outlined text-xl sm:text-2xl">info</span>
+        <button id="paytable-btn" class="aspect-square header-item rounded-full bg-[#0b3d1b] border border-[#f2ca50]/30 flex items-center justify-center text-[#f2ca50] hover:bg-[#11421f] shadow-xl transition-all">
+            <span class="material-symbols-outlined icon-scale">info</span>
         </button>
     </header>
 
     <!-- Main Game Area -->
-    <main class="flex-1 flex flex-col items-center justify-center p-4 relative pt-12 pb-16 sm:pb-32">
+    <main style="padding-top: var(--header-h); padding-bottom: var(--footer-h);" class="flex-1 flex flex-col items-center justify-center p-4 relative">
         
         <!-- Loading Screen -->
         <div id="loading-screen" class="fixed inset-0 z-[200] bg-[#001806] flex flex-col items-center justify-center felt-texture">
@@ -371,29 +374,29 @@
     </main>
 
     <!-- Bottom Bar -->
-    <footer class="fixed bottom-0 w-full z-40 h-12 sm:h-20 bar-bg border-t flex items-center justify-between px-4 sm:px-8 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+    <footer style="height: var(--footer-h);" class="fixed bottom-0 w-full z-40 bar-bg border-t flex items-center justify-between px-4 sm:px-8 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
         <!-- Bet Controls -->
-        <div class="flex items-center gap-2">
-            <div class="flex flex-col items-start">
-                <span class="font-label text-[8px] uppercase tracking-widest text-[#f2ca50]/60 ml-2">Bet</span>
-                <div class="pill-container flex items-center gap-1 sm:gap-3 p-0.5 h-8 sm:h-12 rounded-full">
-                    <button id="bet-minus" class="bet-btn w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/20 flex items-center justify-center hover:bg-[#11421f] transition-all text-xs sm:text-base">-</button>
-                    <span id="bet-display" class="font-headline font-bold text-xs sm:text-xl text-[#f2ca50] w-8 sm:w-16 text-center">$10</span>
-                    <button id="bet-plus" class="bet-btn w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/20 flex items-center justify-center hover:bg-[#11421f] transition-all text-xs sm:text-base">+</button>
+        <div class="flex items-center gap-2 footer-item">
+            <div class="flex flex-col items-start h-full justify-center">
+                <span class="font-label text-[0.6em] uppercase tracking-widest text-[#f2ca50]/60 ml-2">Bet</span>
+                <div class="pill-container flex items-center gap-1 sm:gap-3 p-0.5 h-[80%] rounded-full">
+                    <button id="bet-minus" class="bet-btn aspect-square h-[90%] rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/20 flex items-center justify-center hover:bg-[#11421f] transition-all">-</button>
+                    <span id="bet-display" class="font-headline font-bold text-[#f2ca50] min-w-[2em] sm:min-w-[3em] text-center">$10</span>
+                    <button id="bet-plus" class="bet-btn aspect-square h-[90%] rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/20 flex items-center justify-center hover:bg-[#11421f] transition-all">+</button>
                 </div>
             </div>
             
-            <button id="max-bet-btn" class="hidden sm:flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-[#0b3d1b] border border-[#f2ca50]/30 text-[#f2ca50] hover:bg-[#11421f] transition-all group">
-                <span class="font-label font-bold text-[8px] uppercase tracking-tighter">Max</span>
-                <span class="font-label font-black text-[10px] uppercase">Bet</span>
+            <button id="max-bet-btn" class="hidden sm:flex flex-col items-center justify-center aspect-square h-[80%] rounded-lg bg-[#0b3d1b] border border-[#f2ca50]/30 text-[#f2ca50] hover:bg-[#11421f] transition-all group">
+                <span class="font-label font-bold text-[0.5em] uppercase tracking-tighter">Max</span>
+                <span class="font-label font-black text-[0.6em] uppercase">Bet</span>
             </button>
         </div>
 
         <!-- Win Display -->
-        <div class="flex flex-col items-center flex-1 max-w-[120px] sm:max-w-xs mx-2 sm:mx-4">
-            <span class="font-label text-[8px] sm:text-[10px] uppercase tracking-widest text-[#f2ca50]/60">Last Win</span>
-            <div class="w-full h-8 sm:h-12 rounded-lg win-display-box flex items-center justify-center">
-                <span id="bottom-win-display" class="font-headline font-black text-sm sm:text-3xl text-[#f2ca50] tracking-tight">$0</span>
+        <div class="flex flex-col items-center footer-item flex-1 max-w-[120px] sm:max-w-xs mx-2 sm:mx-4 justify-center">
+            <span class="font-label text-[0.6em] uppercase tracking-widest text-[#f2ca50]/60">Last Win</span>
+            <div class="w-full h-[80%] rounded-lg win-display-box flex items-center justify-center">
+                <span id="bottom-win-display" class="font-headline font-black text-[#f2ca50] tracking-tight">$0</span>
             </div>
         </div>
 
@@ -403,10 +406,10 @@
 
     <!-- Corner Spin Button -->
     <div class="fixed bottom-0 right-0 z-50">
-        <button id="spin-btn" class="relative w-20 h-20 sm:w-36 sm:h-36 rounded-tl-full border-t-4 border-l-4 border-[#d4af37] bg-gradient-to-br from-[#0b3d1b] to-[#001204] flex items-end justify-end p-4 sm:p-8 shadow-[-10px_-10px_30px_rgba(0,0,0,0.5)] active:scale-95 transition-all duration-150 group overflow-hidden">
+        <button id="spin-btn" class="relative w-[15vh] h-[15vh] max-w-[140px] max-h-[140px] min-w-[80px] min-h-[80px] rounded-tl-full border-t-4 border-l-4 border-[#d4af37] bg-gradient-to-br from-[#0b3d1b] to-[#001204] flex items-end justify-end p-[10%] shadow-[-10px_-10px_30px_rgba(0,0,0,0.5)] active:scale-95 transition-all duration-150 group overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-tl from-[#f2ca50]/10 to-transparent"></div>
-            <span class="material-symbols-outlined text-3xl sm:text-6xl text-[#f2ca50] group-hover:rotate-180 transition-transform duration-700 z-10">refresh</span>
-            <div class="absolute top-4 sm:top-8 left-4 sm:left-8 font-label text-[8px] sm:text-[12px] font-bold text-[#f2ca50] uppercase tracking-[0.2em] -rotate-45">Spin</div>
+            <span class="material-symbols-outlined text-[4vh] sm:text-[8vh] text-[#f2ca50] group-hover:rotate-180 transition-transform duration-700 z-10">refresh</span>
+            <div class="absolute top-[20%] left-[20%] font-label text-[1.5vh] font-bold text-[#f2ca50] uppercase tracking-[0.2em] -rotate-45">Spin</div>
         </button>
     </div>
 
