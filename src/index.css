@@ -1,1 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&family=Anton&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-display: "Anton", sans-serif;
+  
+  --color-gold-light: #f2ca50;
+  --color-gold: #d4af37;
+  --color-gold-dark: #b8860b;
+  --color-emerald-deep: #001806;
+  --color-emerald-felt: #0b3d1b;
+  --color-leather: #1a1a1a;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-emerald-deep text-white antialiased overflow-hidden;
+  }
+}
+
+.felt-texture {
+  background-color: var(--color-emerald-felt);
+  background-image: 
+    radial-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
+    radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 4px 4px, 6px 6px;
+  background-position: 0 0, 2px 2px;
+}
+
+.metallic-gold {
+  background: linear-gradient(135deg, 
+    #f2ca50 0%, 
+    #fff5d1 20%, 
+    #d4af37 50%, 
+    #b8860b 80%, 
+    #f2ca50 100%
+  );
+  background-size: 200% 200%;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.6),
+    0 4px 8px rgba(0,0,0,0.4),
+    0 0 20px rgba(212, 175, 55, 0.2);
+}
+
+.metallic-gold:hover {
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.reel-shadow {
+  box-shadow: 
+    inset 0 40px 60px rgba(0,0,0,0.9), 
+    inset 0 -40px 60px rgba(0,0,0,0.9),
+    inset 20px 0 30px rgba(0,0,0,0.4),
+    inset -20px 0 30px rgba(0,0,0,0.4);
+}
+
+.glow-gold {
+  filter: drop-shadow(0 0 12px rgba(242, 202, 80, 0.6));
+}
+
+.brushed-metal {
+  background: 
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+    #1a1a1a;
+  background-size: 2px 2px;
+}
+
+.leather-trim {
+  background: #121212;
+  background-image: radial-gradient(rgba(255,255,255,0.02) 1px, transparent 0);
+  background-size: 3px 3px;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.neon-text {
+  text-shadow: 0 0 10px rgba(242, 202, 80, 0.8), 0 0 20px rgba(242, 202, 80, 0.4);
+}
+
+/* Custom scrollbar for paytable */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-gold);
+  border-radius: 10px;
+}

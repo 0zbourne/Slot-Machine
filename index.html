@@ -56,11 +56,18 @@
         }
 
         .symbol {
-            height: 100px;
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
+            font-size: 2rem;
+        }
+
+        @media (min-width: 640px) {
+            .symbol {
+                height: 100px;
+                font-size: 3rem;
+            }
         }
 
         .win-overlay {
@@ -159,35 +166,35 @@
             <div class="payline-indicator"></div>
             
             <!-- Reels Grid -->
-            <div class="grid grid-cols-5 gap-1 h-[300px] relative" id="reels-grid">
+            <div class="grid grid-cols-5 gap-1 h-[180px] sm:h-[300px] relative" id="reels-grid">
                 <!-- Reels will be injected here -->
             </div>
         </div>
 
         <!-- Controls -->
-        <div class="mt-8 w-full max-w-2xl flex items-center justify-between gap-4 z-30">
+        <div class="mt-6 sm:mt-8 w-full max-w-2xl flex items-center justify-between gap-2 sm:gap-4 z-30 px-2 sm:px-0">
             <!-- Bet Controls -->
             <div class="flex flex-col items-center">
-                <span class="font-label text-[10px] uppercase tracking-widest text-[#d0c5af] mb-1">Total Bet</span>
-                <div class="bg-[#001204] px-4 py-2 rounded-sm border-b border-[#4d4635] flex items-center gap-3">
-                    <button id="bet-minus" class="w-8 h-8 rounded-sm bg-[#0b3d1b] text-[#f2ca50] border border-[#4d4635]/30 flex items-center justify-center hover:bg-[#11421f]">-</button>
-                    <span id="bet-display" class="font-headline font-bold text-2xl text-[#f2ca50] w-12 text-center">$10</span>
-                    <button id="bet-plus" class="w-8 h-8 rounded-sm bg-[#0b3d1b] text-[#f2ca50] border border-[#4d4635]/30 flex items-center justify-center hover:bg-[#11421f]">+</button>
+                <span class="font-label text-[8px] sm:text-[10px] uppercase tracking-widest text-[#d0c5af] mb-1">Total Bet</span>
+                <div class="bg-[#001204] px-2 py-1 sm:px-4 sm:py-2 rounded-sm border-b border-[#4d4635] flex items-center gap-1 sm:gap-3">
+                    <button id="bet-minus" class="w-6 h-6 sm:w-8 sm:h-8 rounded-sm bg-[#0b3d1b] text-[#f2ca50] border border-[#4d4635]/30 flex items-center justify-center hover:bg-[#11421f] text-sm sm:text-base">-</button>
+                    <span id="bet-display" class="font-headline font-bold text-lg sm:text-2xl text-[#f2ca50] w-10 sm:w-12 text-center">$10</span>
+                    <button id="bet-plus" class="w-6 h-6 sm:w-8 sm:h-8 rounded-sm bg-[#0b3d1b] text-[#f2ca50] border border-[#4d4635]/30 flex items-center justify-center hover:bg-[#11421f] text-sm sm:text-base">+</button>
                 </div>
             </div>
 
             <!-- Spin Button -->
             <div class="relative">
-                <button id="spin-btn" class="relative w-24 h-24 rounded-full border-[6px] border-[#d4af37] bg-[#0b3d1b] flex items-center justify-center shadow-2xl active:scale-90 transition-all duration-150 group">
-                    <span class="material-symbols-outlined text-5xl text-[#f2ca50] group-hover:rotate-180 transition-transform duration-700">refresh</span>
+                <button id="spin-btn" class="relative w-16 h-16 sm:w-24 sm:h-24 rounded-full border-[4px] sm:border-[6px] border-[#d4af37] bg-[#0b3d1b] flex items-center justify-center shadow-2xl active:scale-90 transition-all duration-150 group">
+                    <span class="material-symbols-outlined text-3xl sm:text-5xl text-[#f2ca50] group-hover:rotate-180 transition-transform duration-700">refresh</span>
                 </button>
-                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 font-label text-[10px] font-bold text-[#f2ca50] uppercase tracking-[0.2em]">Spin</div>
+                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 font-label text-[8px] sm:text-[10px] font-bold text-[#f2ca50] uppercase tracking-[0.2em]">Spin</div>
             </div>
 
             <!-- Stats/Auto (Placeholder) -->
             <div class="flex flex-col items-center">
-                <span class="font-label text-[10px] uppercase tracking-widest text-[#d0c5af] mb-1">Auto Spin</span>
-                <button id="auto-btn" class="bg-[#001204] px-6 py-3 rounded-sm border border-[#f2ca50]/40 text-[#f2ca50] font-label font-bold tracking-widest uppercase hover:bg-[#f2ca50] hover:text-[#3c2f00] transition-all">
+                <span class="font-label text-[8px] sm:text-[10px] uppercase tracking-widest text-[#d0c5af] mb-1">Auto Spin</span>
+                <button id="auto-btn" class="bg-[#001204] px-3 py-2 sm:px-6 sm:py-3 rounded-sm border border-[#f2ca50]/40 text-[#f2ca50] font-label font-bold text-xs sm:text-sm tracking-widest uppercase hover:bg-[#f2ca50] hover:text-[#3c2f00] transition-all">
                     OFF
                 </button>
             </div>
@@ -210,11 +217,11 @@
     </div>
 
     <!-- Paytable Modal -->
-    <div id="paytable-modal" class="paytable-modal fixed inset-0 z-[110] bg-[#001806] p-8 overflow-y-auto">
+    <div id="paytable-modal" class="paytable-modal fixed inset-0 z-[110] bg-[#001806] p-4 sm:p-8 overflow-y-auto">
         <div class="max-w-2xl mx-auto">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="font-headline text-4xl font-black italic text-[#f2ca50]">PAY TABLE</h2>
-                <button id="close-paytable" class="text-[#f2ca50]"><span class="material-symbols-outlined text-4xl">close</span></button>
+            <div class="flex justify-between items-center mb-6 sm:mb-8">
+                <h2 class="font-headline text-3xl sm:text-4xl font-black italic text-[#f2ca50]">PAY TABLE</h2>
+                <button id="close-paytable" class="text-[#f2ca50]"><span class="material-symbols-outlined text-3xl sm:text-4xl">close</span></button>
             </div>
             <div id="paytable-content" class="grid grid-cols-1 gap-4">
                 <!-- Injected by JS -->
@@ -252,7 +259,7 @@
             BET_OPTIONS: [10, 25, 50, 100],
             REEL_COUNT: 5,
             ROW_COUNT: 3,
-            SYMBOL_HEIGHT: 100,
+            SYMBOL_HEIGHT: window.innerWidth < 640 ? 60 : 100,
             SPIN_DURATION: 2000,
             REEL_DELAY: 200,
             SUSPENSE_REEL: 2, // Index of reel to slow down (3rd reel)
@@ -336,10 +343,10 @@
             // Populate Paytable
             SYMBOLS.forEach(s => {
                 const row = document.createElement('div');
-                row.className = 'flex items-center gap-4 bg-[#0b3d1b] p-4 rounded-xl border-l-4 border-[#f2ca50] shadow-lg';
+                row.className = 'flex items-center gap-3 sm:gap-4 bg-[#0b3d1b] p-3 sm:p-4 rounded-xl border-l-4 border-[#f2ca50] shadow-lg';
                 row.innerHTML = `
-                    <div class="w-16 h-16 flex-shrink-0 bg-[#001204] border border-[#f2ca50]/40 rounded-lg flex items-center justify-center">
-                        <span class="material-symbols-outlined text-3xl" style="color: ${s.color}; font-variation-settings: 'FILL' 1;">${s.icon}</span>
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 bg-[#001204] border border-[#f2ca50]/40 rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined text-2xl sm:text-3xl" style="color: ${s.color}; font-variation-settings: 'FILL' 1;">${s.icon}</span>
                     </div>
                     <div class="flex-1 grid grid-cols-3 gap-2">
                         <div class="text-center"><span class="block text-[10px] font-label text-[#d0c5af]">5X</span><span class="font-headline font-bold text-[#f2ca50]">${s.value * PAYOUTS[5]}</span></div>
@@ -355,6 +362,10 @@
 
         function populateReel(index, initialSymbols = null) {
             const strip = document.getElementById(`reel-${index}`);
+            if (!strip) {
+                console.error(`Reel strip not found in populateReel: reel-${index}`);
+                return;
+            }
             strip.innerHTML = '';
             
             // Create a long strip for animation
@@ -390,31 +401,44 @@
          * GAME LOGIC
          */
         async function spin() {
-            if (state.isSpinning || state.credits < CONFIG.BET_OPTIONS[state.betIndex]) return;
-
-            state.isSpinning = true;
-            state.credits -= CONFIG.BET_OPTIONS[state.betIndex];
-            state.stats.spins++;
-            updateUI();
-
-            // 1. Generate Result
-            const result = generateResult();
-            
-            // 2. Animate Reels
-            const spinPromises = [];
-            for (let i = 0; i < CONFIG.REEL_COUNT; i++) {
-                spinPromises.push(animateReel(i, result[i]));
+            if (state.isSpinning) {
+                console.log("Spin ignored: already spinning");
+                return;
+            }
+            if (state.credits < CONFIG.BET_OPTIONS[state.betIndex]) {
+                console.log("Spin ignored: not enough credits", state.credits, CONFIG.BET_OPTIONS[state.betIndex]);
+                return;
             }
 
-            await Promise.all(spinPromises);
+            try {
+                console.log("Spin started");
+                state.isSpinning = true;
+                state.credits -= CONFIG.BET_OPTIONS[state.betIndex];
+                state.stats.spins++;
+                updateUI();
 
-            // 3. Calculate Win
-            const win = calculateWin(result);
-            handleWin(win);
+                // 1. Generate Result
+                const result = generateResult();
+                
+                // 2. Animate Reels
+                const spinPromises = [];
+                for (let i = 0; i < CONFIG.REEL_COUNT; i++) {
+                    spinPromises.push(animateReel(i, result[i]));
+                }
 
-            state.isSpinning = false;
-            if (state.autoSpin && state.credits >= CONFIG.BET_OPTIONS[state.betIndex]) {
-                setTimeout(spin, 1000);
+                await Promise.all(spinPromises);
+
+                // 3. Calculate Win
+                const win = calculateWin(result);
+                handleWin(win);
+            } catch (error) {
+                console.error("Spin error:", error);
+            } finally {
+                state.isSpinning = false;
+                updateUI();
+                if (state.autoSpin && state.credits >= CONFIG.BET_OPTIONS[state.betIndex]) {
+                    setTimeout(spin, 1000);
+                }
             }
         }
 
@@ -445,13 +469,19 @@
 
         async function animateReel(index, finalSymbols) {
             const strip = document.getElementById(`reel-${index}`);
+            if (!strip) {
+                console.error(`Reel strip not found: reel-${index}`);
+                return Promise.resolve();
+            }
+
             const duration = CONFIG.SPIN_DURATION + (index * CONFIG.REEL_DELAY);
-            
-            // Suspense Mechanic: Slow down reel 3 if 1 and 2 match
             let finalDuration = duration;
-            // We'd need to know the result of 1 and 2 beforehand to trigger this perfectly
-            // For simplicity, we'll just add a random chance or check the generated result
             
+            if (isNaN(finalDuration)) {
+                console.error("Invalid finalDuration in animateReel", finalDuration);
+                return Promise.resolve();
+            }
+
             return new Promise(resolve => {
                 strip.style.transition = `transform ${finalDuration}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
                 
@@ -524,6 +554,8 @@
         }
 
         function handleWin(win) {
+            if (!win || typeof win.amount !== 'number' || isNaN(win.amount)) return;
+            
             if (win.amount > 0) {
                 state.credits += win.amount;
                 state.stats.totalWon += win.amount;
@@ -542,22 +574,24 @@
             winOverlay.classList.add('active');
             winAmountBox.innerText = `+$${win.amount.toLocaleString()}`;
 
+            const isMobile = window.innerWidth < 640;
+
             switch(win.type) {
                 case 'LDW':
                 case 'SMALL':
                     winTitle.innerText = 'WIN!';
-                    winTitle.className = 'font-headline font-black italic text-6xl text-[#f2ca50] drop-shadow-md uppercase';
-                    winAmountBox.className = 'mt-4 inline-block bg-[#0b3d1b] text-[#f2ca50] px-6 py-2 font-label font-bold text-xl rounded-sm border border-[#f2ca50]/30';
+                    winTitle.className = `font-headline font-black italic ${isMobile ? 'text-4xl' : 'text-6xl'} text-[#f2ca50] drop-shadow-md uppercase`;
+                    winAmountBox.className = `mt-4 inline-block bg-[#0b3d1b] text-[#f2ca50] ${isMobile ? 'px-4 py-1 text-lg' : 'px-6 py-2 text-xl'} font-label font-bold rounded-sm border border-[#f2ca50]/30`;
                     break;
                 case 'BIG':
                     winTitle.innerText = 'BIG WIN!';
-                    winTitle.className = 'font-headline font-black italic text-7xl text-[#f2ca50] drop-shadow-[0_0_20px_rgba(242,202,80,0.8)] uppercase';
-                    winAmountBox.className = 'mt-4 inline-block bg-[#f89c64] text-[#321200] px-8 py-3 font-label font-bold text-2xl rounded-sm shadow-xl border border-[#f2ca50]/30';
+                    winTitle.className = `font-headline font-black italic ${isMobile ? 'text-5xl' : 'text-7xl'} text-[#f2ca50] drop-shadow-[0_0_20px_rgba(242,202,80,0.8)] uppercase`;
+                    winAmountBox.className = `mt-4 inline-block bg-[#f89c64] text-[#321200] ${isMobile ? 'px-6 py-2 text-xl' : 'px-8 py-3 text-2xl'} font-label font-bold rounded-sm shadow-xl border border-[#f2ca50]/30`;
                     break;
                 case 'MEGA':
                     winTitle.innerText = 'MEGA WIN!';
-                    winTitle.className = 'font-headline font-black italic text-8xl text-[#f2ca50] drop-shadow-[0_0_40px_rgba(242,202,80,1)] uppercase animate-bounce-custom';
-                    winAmountBox.className = 'mt-4 inline-block bg-gradient-to-r from-[#ffe088] to-[#d4af37] text-[#001204] px-10 py-4 font-label font-bold text-3xl rounded-sm shadow-2xl border-2 border-white/20';
+                    winTitle.className = `font-headline font-black italic ${isMobile ? 'text-6xl' : 'text-8xl'} text-[#f2ca50] drop-shadow-[0_0_40px_rgba(242,202,80,1)] uppercase animate-bounce-custom`;
+                    winAmountBox.className = `mt-4 inline-block bg-gradient-to-r from-[#ffe088] to-[#d4af37] text-[#001204] ${isMobile ? 'px-8 py-3 text-2xl' : 'px-10 py-4 text-3xl'} font-label font-bold rounded-sm shadow-2xl border-2 border-white/20`;
                     break;
             }
         }
@@ -568,12 +602,23 @@
         function updateUI() {
             balanceEl.innerText = `$${state.credits.toLocaleString()}`;
             betEl.innerText = `$${CONFIG.BET_OPTIONS[state.betIndex]}`;
-            spinBtn.disabled = state.isSpinning || state.credits < CONFIG.BET_OPTIONS[state.betIndex];
-            spinBtn.style.opacity = spinBtn.disabled ? '0.5' : '1';
+            
+            const isDisabled = state.isSpinning || state.credits < CONFIG.BET_OPTIONS[state.betIndex];
+            spinBtn.disabled = isDisabled;
+            spinBtn.style.opacity = isDisabled ? '0.5' : '1';
+            spinBtn.style.cursor = isDisabled ? 'not-allowed' : 'pointer';
+            
+            const icon = spinBtn.querySelector('.material-symbols-outlined');
+            if (state.isSpinning) {
+                icon.classList.add('animate-spin');
+            } else {
+                icon.classList.remove('animate-spin');
+            }
+
             autoBtn.innerText = state.autoSpin ? 'ON' : 'OFF';
             autoBtn.className = state.autoSpin ? 
-                'bg-[#f2ca50] px-6 py-3 rounded-sm border border-[#f2ca50]/40 text-[#3c2f00] font-label font-bold tracking-widest uppercase' :
-                'bg-[#001204] px-6 py-3 rounded-sm border border-[#f2ca50]/40 text-[#f2ca50] font-label font-bold tracking-widest uppercase hover:bg-[#f2ca50] hover:text-[#3c2f00] transition-all';
+                'bg-[#f2ca50] px-3 py-2 sm:px-6 sm:py-3 rounded-sm border border-[#f2ca50]/40 text-[#3c2f00] font-label font-bold text-xs sm:text-sm tracking-widest uppercase' :
+                'bg-[#001204] px-3 py-2 sm:px-6 sm:py-3 rounded-sm border border-[#f2ca50]/40 text-[#f2ca50] font-label font-bold text-xs sm:text-sm tracking-widest uppercase hover:bg-[#f2ca50] hover:text-[#3c2f00] transition-all';
         }
 
         /**
@@ -617,6 +662,10 @@
 
         // Initialize
         init();
+
+        window.addEventListener('resize', () => {
+            CONFIG.SYMBOL_HEIGHT = window.innerWidth < 640 ? 60 : 100;
+        });
 
     </script>
 </body>
