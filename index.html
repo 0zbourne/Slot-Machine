@@ -81,6 +81,20 @@
             animation: fadeIn 0.3s ease-out forwards;
         }
 
+        .win-overlay .win-content {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .win-overlay.active .win-content {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s forwards;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -202,14 +216,14 @@
     </main>
 
     <!-- Win Overlay -->
-    <div id="win-overlay" class="win-overlay fixed inset-0 z-[150] cursor-pointer">
-        <div class="flex flex-col items-center justify-center h-full">
-            <div class="text-center transform -rotate-2 pointer-events-none">
+    <div id="win-overlay" class="win-overlay fixed inset-0 z-[150] cursor-pointer w-full h-full">
+        <div class="win-content flex flex-col items-center justify-center w-full h-full px-4">
+            <div class="text-center transform -rotate-2 pointer-events-none w-full max-w-4xl">
                 <h2 id="win-title" class="font-headline font-black italic text-6xl md:text-8xl text-[#f2ca50] drop-shadow-[0_0_30px_rgba(242,202,80,0.8)] tracking-tighter uppercase">
                     BIG WIN!
                 </h2>
-                <div id="win-amount-box" class="mt-4 inline-block bg-[#f89c64] text-[#321200] px-8 py-3 font-label font-bold text-2xl rounded-sm shadow-xl border border-[#f2ca50]/30">
-                    +$5,000.00
+                <div id="win-amount-box" class="mt-4 inline-block bg-[#f89c64] text-[#321200] px-8 py-3 font-label font-bold text-2xl rounded-sm shadow-xl border border-[#f2ca50]/30 min-w-[200px]">
+                    +$0
                 </div>
             </div>
             <div class="mt-12 text-[#f2ca50] font-label font-bold tracking-widest uppercase border-b border-[#f2ca50] animate-pulse">Tap anywhere to continue</div>
@@ -366,6 +380,9 @@
                 console.error(`Reel strip not found in populateReel: reel-${index}`);
                 return;
             }
+            
+            // Disable transition for the reset jump
+            strip.style.transition = 'none';
             strip.innerHTML = '';
             
             // Create a long strip for animation
@@ -405,10 +422,16 @@
                 console.log("Spin ignored: already spinning");
                 return;
             }
+            
+            // Dismiss win overlay if it's still active from previous spin
+            winOverlay.classList.remove('active');
+
             if (state.credits < CONFIG.BET_OPTIONS[state.betIndex]) {
                 console.log("Spin ignored: not enough credits", state.credits, CONFIG.BET_OPTIONS[state.betIndex]);
                 return;
             }
+
+            let winResult = null;
 
             try {
                 console.log("Spin started");
@@ -427,17 +450,22 @@
                 }
 
                 await Promise.all(spinPromises);
+                
+                // Wait for reels to settle visually before showing win
+                await new Promise(resolve => setTimeout(resolve, 600));
 
                 // 3. Calculate Win
-                const win = calculateWin(result);
-                handleWin(win);
+                winResult = calculateWin(result);
+                handleWin(winResult);
             } catch (error) {
                 console.error("Spin error:", error);
             } finally {
                 state.isSpinning = false;
                 updateUI();
                 if (state.autoSpin && state.credits >= CONFIG.BET_OPTIONS[state.betIndex]) {
-                    setTimeout(spin, 1000);
+                    // Longer delay if there was a win to show celebration
+                    const autoDelay = (winResult && winResult.amount > 0) ? 2500 : 1000;
+                    setTimeout(spin, autoDelay);
                 }
             }
         }
@@ -572,7 +600,13 @@
             if (win.type === 'NONE') return;
 
             winOverlay.classList.add('active');
-            winAmountBox.innerText = `+$${win.amount.toLocaleString()}`;
+            
+            // Count up animation
+            let duration = 1000;
+            if (win.type === 'BIG') duration = 2000;
+            if (win.type === 'MEGA') duration = 4000;
+            
+            animateValue(winAmountBox, 0, win.amount, duration);
 
             const isMobile = window.innerWidth < 640;
 
@@ -594,6 +628,24 @@
                     winAmountBox.className = `mt-4 inline-block bg-gradient-to-r from-[#ffe088] to-[#d4af37] text-[#001204] ${isMobile ? 'px-8 py-3 text-2xl' : 'px-10 py-4 text-3xl'} font-label font-bold rounded-sm shadow-2xl border-2 border-white/20`;
                     break;
             }
+        }
+
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                // Easing function for a smoother count-up (easeOutExpo)
+                const easedProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                const current = Math.floor(easedProgress * (end - start) + start);
+                element.innerText = `+$${current.toLocaleString()}`;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    element.innerText = `+$${end.toLocaleString()}`;
+                }
+            };
+            window.requestAnimationFrame(step);
         }
 
         /**
