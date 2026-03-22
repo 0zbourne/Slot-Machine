@@ -117,6 +117,35 @@
             position: relative;
         }
 
+        /* Suspense Effects */
+        .suspense-active {
+            border-color: #ff4444 !important;
+            box-shadow: 0 0 40px rgba(255, 68, 68, 0.6), inset 0 0 60px rgba(0,0,0,0.9) !important;
+            animation: suspense-shake 0.15s infinite;
+        }
+
+        @keyframes suspense-shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            25% { transform: translate(-1px, -1.5px) rotate(-0.5deg); }
+            50% { transform: translate(-2px, 0px) rotate(0.5deg); }
+            75% { transform: translate(2px, 1.5px) rotate(0deg); }
+            100% { transform: translate(1px, -1px) rotate(0.5deg); }
+        }
+
+        .suspense-highlight {
+            filter: drop-shadow(0 0 20px #f2ca50) brightness(1.6);
+            z-index: 50;
+            position: relative;
+            transform: scale(1.1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .suspense-reel-dim {
+            opacity: 0.4;
+            filter: grayscale(0.5) blur(1px);
+            transition: all 0.5s ease;
+        }
+
         @keyframes pulse-glow {
             from { 
                 filter: drop-shadow(0 0 5px #f2ca50) brightness(1.2);
@@ -608,18 +637,59 @@
                 // 1. Generate Result
                 const result = generateResult();
                 
-                // 2. Animate Reels
+                // 2. Detect Suspense Condition
+                const s0 = result[0][1].id;
+                const s1 = result[1][1].id;
+                const highValueIds = ['wild', 'diamond', 'seven'];
+                // Suspense if first two match or one is wild, and it's a high value symbol
+                const isSuspense = (s0 === s1 || s0 === 'wild' || s1 === 'wild') && 
+                                  (highValueIds.includes(s0) || highValueIds.includes(s1));
+
+                // 3. Animate Reels
                 const spinPromises = [];
+                const machine = document.querySelector('.slot-machine-container');
+                
                 for (let i = 0; i < CONFIG.REEL_COUNT; i++) {
-                    spinPromises.push(animateReel(i, result[i]));
+                    let duration = CONFIG.SPIN_DURATION + (i * CONFIG.REEL_DELAY);
+                    let easing = 'cubic-bezier(0.45, 0.05, 0.55, 0.95)';
+                    
+                    if (i === 2 && isSuspense) {
+                        duration = 4500; // Much longer for suspense
+                        easing = 'cubic-bezier(0.2, 0, 0.4, 1)'; // Slower, more linear at the end
+                    }
+                    
+                    // Reels after the suspense reel must wait for it to finish
+                    if (i > 2 && isSuspense) {
+                        duration += 2500;
+                    }
+
+                    spinPromises.push(animateReel(i, result[i], duration, easing));
+                }
+
+                // Trigger visual suspense effects after Reel 1 settles
+                if (isSuspense) {
+                    setTimeout(() => {
+                        machine.classList.add('suspense-active');
+                        highlightSuspenseSymbols([0, 1]);
+                        
+                        // Dim other reels except the one spinning (Reel 2)
+                        document.querySelectorAll('.reel-container').forEach((reel, idx) => {
+                            if (idx !== 2) reel.classList.add('suspense-reel-dim');
+                        });
+                    }, CONFIG.SPIN_DURATION + CONFIG.REEL_DELAY);
                 }
 
                 await Promise.all(spinPromises);
                 
+                // Cleanup suspense
+                machine.classList.remove('suspense-active');
+                document.querySelectorAll('.reel-container').forEach(reel => reel.classList.remove('suspense-reel-dim'));
+                removeSuspenseHighlights();
+                
                 // Wait for reels to settle visually before showing win
                 await new Promise(resolve => setTimeout(resolve, 600));
 
-                // 3. Calculate Win
+                // 4. Calculate Win
                 winResult = calculateWin(result);
                 handleWin(winResult);
             } catch (error) {
@@ -628,6 +698,19 @@
                 state.isSpinning = false;
                 updateUI();
             }
+        }
+
+        function highlightSuspenseSymbols(reelIndices) {
+            const reels = document.querySelectorAll('.reel-strip');
+            reelIndices.forEach(idx => {
+                const strip = reels[idx];
+                const symbolEl = strip.children[strip.children.length - 2]; // Middle row
+                if (symbolEl) symbolEl.classList.add('suspense-highlight');
+            });
+        }
+
+        function removeSuspenseHighlights() {
+            document.querySelectorAll('.symbol').forEach(el => el.classList.remove('suspense-highlight'));
         }
 
         function generateResult() {
@@ -655,12 +738,13 @@
             return result;
         }
 
-        async function animateReel(index, finalSymbols) {
+        async function animateReel(index, finalSymbols, durationOverride = null, easingOverride = null) {
             const strip = document.getElementById(`reel-${index}`);
             if (!strip) return Promise.resolve();
 
             const symbolHeight = CONFIG.SYMBOL_HEIGHT;
-            const duration = CONFIG.SPIN_DURATION + (index * CONFIG.REEL_DELAY);
+            const duration = durationOverride || (CONFIG.SPIN_DURATION + (index * CONFIG.REEL_DELAY));
+            const easing = easingOverride || 'cubic-bezier(0.45, 0.05, 0.55, 0.95)';
             
             return new Promise(resolve => {
                 // Add the final symbols to the TOP of the strip
@@ -673,7 +757,7 @@
                     el.dataset.id = symbol.id;
                 }
 
-                strip.style.transition = `transform ${duration}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+                strip.style.transition = `transform ${duration}ms ${easing}`;
                 
                 // Animate to the top (showing index 0, 1, 2)
                 // Index 0 is top, 1 is middle, 2 is bottom
