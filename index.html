@@ -63,7 +63,7 @@
             font-size: 2rem;
         }
 
-        @media (min-width: 640px) {
+        @media (min-width: 640px) and (min-height: 501px) {
             .symbol {
                 height: 100px;
                 font-size: 3rem;
@@ -78,6 +78,8 @@
 
         .win-overlay.active {
             display: flex;
+            align-items: center;
+            justify-content: center;
             animation: fadeIn 0.3s ease-out forwards;
         }
 
@@ -109,10 +111,41 @@
             animation: bounce 0.5s infinite;
         }
 
-        .near-miss-glow {
-            box-shadow: 0 0 20px #f2ca50;
-            border: 2px solid #f2ca50;
-            z-index: 10;
+        .winning-symbol {
+            animation: pulse-glow 0.5s ease-in-out infinite alternate;
+            z-index: 30;
+            position: relative;
+        }
+
+        @keyframes pulse-glow {
+            from { 
+                filter: drop-shadow(0 0 5px #f2ca50) brightness(1.2);
+                transform: scale(1);
+            }
+            to { 
+                filter: drop-shadow(0 0 20px #f2ca50) brightness(1.5);
+                transform: scale(1.1);
+            }
+        }
+
+        .win-tally-label {
+            position: absolute;
+            background: #f2ca50;
+            color: #001204;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 800;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 40;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            animation: slideUpFade 0.5s ease-out forwards;
+        }
+
+        @keyframes slideUpFade {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(-20px); opacity: 1; }
         }
 
         /* Hide scrollbars */
@@ -144,24 +177,146 @@
         .paytable-modal.active {
             transform: translateY(0);
         }
+
+        /* Rotation Overlay */
+        #rotation-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: #001806;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        @media (max-width: 932px) and (orientation: portrait) {
+            #rotation-overlay {
+                display: flex;
+            }
+        }
+
+        /* Landscape Optimizations */
+        @media (max-height: 500px) {
+            main {
+                padding-top: 2.5rem;
+                padding-bottom: 2.5rem;
+                justify-content: center;
+                gap: 0.1rem;
+            }
+            .slot-machine-container {
+                max-width: 80vw;
+                padding: 0.1rem;
+                border-width: 2px;
+            }
+            #reels-grid {
+                height: 180px !important;
+            }
+            .symbol {
+                height: 60px !important;
+            }
+            .symbol .material-symbols-outlined {
+                font-size: 36px !important;
+            }
+            header {
+                height: 2.5rem !important;
+            }
+            footer {
+                height: 2.5rem !important;
+            }
+            .pill-container {
+                padding: 0.1rem 0.5rem !important;
+            }
+            #spin-btn {
+                width: 5rem !important;
+                height: 5rem !important;
+            }
+            #spin-btn .material-symbols-outlined {
+                font-size: 2rem !important;
+                margin-top: 0.5rem;
+                margin-left: 0.5rem;
+            }
+            .win-display-box {
+                padding: 0.1rem !important;
+            }
+            #bottom-win-display {
+                font-size: 1rem !important;
+            }
+            .bet-btn {
+                width: 1.5rem !important;
+                height: 1.5rem !important;
+                font-size: 0.75rem !important;
+            }
+            #bet-display {
+                font-size: 0.9rem !important;
+                width: 2.5rem !important;
+            }
+        }
+
+        .bar-bg {
+            background: linear-gradient(180deg, rgba(11, 61, 27, 0.95) 0%, rgba(0, 18, 4, 0.98) 100%);
+            backdrop-filter: blur(10px);
+            border-color: rgba(242, 202, 80, 0.2);
+        }
+
+        .pill-container {
+            background: rgba(0, 18, 4, 0.6);
+            border: 1px solid rgba(242, 202, 80, 0.3);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .loyalty-bar {
+            background: rgba(0, 18, 4, 0.8);
+            border: 1px solid rgba(242, 202, 80, 0.2);
+            overflow: hidden;
+        }
+
+        .loyalty-progress {
+            background: var(--gold-gradient);
+            box-shadow: 0 0 10px rgba(242, 202, 80, 0.5);
+        }
+
+        .win-display-box {
+            background: radial-gradient(circle at center, rgba(242, 202, 80, 0.15) 0%, transparent 70%);
+            border: 1px solid rgba(242, 202, 80, 0.2);
+        }
     </style>
 </head>
 <body class="felt-texture">
 
-    <!-- Top Bar -->
-    <nav class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#0b3d1b]/80 backdrop-blur-md border-b border-[#4d4635]/20 shadow-xl">
-        <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#f2ca50]" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
-            <span id="balance-display" class="font-headline font-bold text-xl tracking-tight text-[#f2ca50]">$1,000</span>
+    <!-- Rotation Overlay -->
+    <div id="rotation-overlay">
+        <div class="animate-bounce-custom mb-6">
+            <span class="material-symbols-outlined text-7xl text-[#f2ca50]">screen_rotation</span>
         </div>
-        <div class="text-[#f2ca50] font-headline font-black italic text-lg hidden sm:block">THE GILDED SALON</div>
-        <button id="paytable-btn" class="text-[#d0c5af] hover:text-[#ffe088]">
-            <span class="material-symbols-outlined">info</span>
+        <h2 class="font-headline text-2xl font-black italic text-[#f2ca50] mb-2 uppercase tracking-widest">Landscape Recommended</h2>
+        <p class="font-label text-sm text-[#baf0be] max-w-xs">Please rotate your device to the horizontal position for the best gaming experience.</p>
+    </div>
+
+    <!-- Top Bar -->
+    <header class="fixed top-0 w-full z-50 h-12 sm:h-16 bar-bg border-b flex items-center justify-between px-4 sm:px-8 shadow-2xl">
+        <!-- Balance -->
+        <div class="flex items-center gap-2 pill-container px-3 h-8 sm:h-10 rounded-full">
+            <span class="material-symbols-outlined text-[#f2ca50] text-lg sm:text-2xl" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+            <span id="balance-display" class="font-headline font-bold text-sm sm:text-xl tracking-tight text-[#f2ca50]">$1,000</span>
+        </div>
+
+        <!-- VIP Shop Button (Hidden on mobile) -->
+        <button class="hidden lg:flex items-center gap-2 bg-gradient-to-b from-[#ffe088] to-[#d4af37] text-[#001204] px-6 h-10 rounded-full font-label font-bold text-xs tracking-widest uppercase shadow-lg hover:brightness-110 transition-all">
+            <span class="material-symbols-outlined text-sm">shopping_cart</span>
+            VIP SHOP
         </button>
-    </nav>
+
+        <!-- Info -->
+        <button id="paytable-btn" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#0b3d1b] border border-[#f2ca50]/30 flex items-center justify-center text-[#f2ca50] hover:bg-[#11421f] shadow-xl transition-all">
+            <span class="material-symbols-outlined text-xl sm:text-2xl">info</span>
+        </button>
+    </header>
 
     <!-- Main Game Area -->
-    <main class="flex-1 flex flex-col items-center justify-center p-4 relative">
+    <main class="flex-1 flex flex-col items-center justify-center p-4 relative pt-12 pb-16 sm:pb-32">
         
         <!-- Loading Screen -->
         <div id="loading-screen" class="fixed inset-0 z-[200] bg-[#001806] flex flex-col items-center justify-center felt-texture">
@@ -176,7 +331,7 @@
         </div>
 
         <!-- Slot Machine Frame -->
-        <div class="relative w-full max-w-4xl bg-[#001204] rounded-xl p-3 border-4 border-[#4d4635]/40 shadow-2xl overflow-hidden">
+        <div class="slot-machine-container relative w-full max-w-2xl bg-[#001204] rounded-xl p-3 border-4 border-[#4d4635]/40 shadow-2xl overflow-hidden">
             <div class="payline-indicator"></div>
             
             <!-- Reels Grid -->
@@ -184,36 +339,47 @@
                 <!-- Reels will be injected here -->
             </div>
         </div>
+    </main>
 
-        <!-- Controls -->
-        <div class="mt-6 sm:mt-8 w-full max-w-2xl flex items-center justify-between gap-2 sm:gap-4 z-30 px-2 sm:px-0">
-            <!-- Bet Controls -->
-            <div class="flex flex-col items-center">
-                <span class="font-label text-[8px] sm:text-[10px] uppercase tracking-widest text-[#d0c5af] mb-1">Total Bet</span>
-                <div class="bg-[#001204] px-2 py-1 sm:px-4 sm:py-2 rounded-sm border-b border-[#4d4635] flex items-center gap-1 sm:gap-3">
-                    <button id="bet-minus" class="w-6 h-6 sm:w-8 sm:h-8 rounded-sm bg-[#0b3d1b] text-[#f2ca50] border border-[#4d4635]/30 flex items-center justify-center hover:bg-[#11421f] text-sm sm:text-base">-</button>
-                    <span id="bet-display" class="font-headline font-bold text-lg sm:text-2xl text-[#f2ca50] w-10 sm:w-12 text-center">$10</span>
-                    <button id="bet-plus" class="w-6 h-6 sm:w-8 sm:h-8 rounded-sm bg-[#0b3d1b] text-[#f2ca50] border border-[#4d4635]/30 flex items-center justify-center hover:bg-[#11421f] text-sm sm:text-base">+</button>
+    <!-- Bottom Bar -->
+    <footer class="fixed bottom-0 w-full z-40 h-12 sm:h-20 bar-bg border-t flex items-center justify-between px-4 sm:px-8 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        <!-- Bet Controls -->
+        <div class="flex items-center gap-2">
+            <div class="flex flex-col items-start">
+                <span class="font-label text-[8px] uppercase tracking-widest text-[#f2ca50]/60 ml-2">Bet</span>
+                <div class="pill-container flex items-center gap-1 sm:gap-3 p-0.5 h-8 sm:h-12 rounded-full">
+                    <button id="bet-minus" class="bet-btn w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/20 flex items-center justify-center hover:bg-[#11421f] transition-all text-xs sm:text-base">-</button>
+                    <span id="bet-display" class="font-headline font-bold text-xs sm:text-xl text-[#f2ca50] w-8 sm:w-16 text-center">$10</span>
+                    <button id="bet-plus" class="bet-btn w-6 h-6 sm:w-10 sm:h-10 rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/20 flex items-center justify-center hover:bg-[#11421f] transition-all text-xs sm:text-base">+</button>
                 </div>
             </div>
+            
+            <button id="max-bet-btn" class="hidden sm:flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-[#0b3d1b] border border-[#f2ca50]/30 text-[#f2ca50] hover:bg-[#11421f] transition-all group">
+                <span class="font-label font-bold text-[8px] uppercase tracking-tighter">Max</span>
+                <span class="font-label font-black text-[10px] uppercase">Bet</span>
+            </button>
+        </div>
 
-            <!-- Spin Button -->
-            <div class="relative">
-                <button id="spin-btn" class="relative w-16 h-16 sm:w-24 sm:h-24 rounded-full border-[4px] sm:border-[6px] border-[#d4af37] bg-[#0b3d1b] flex items-center justify-center shadow-2xl active:scale-90 transition-all duration-150 group">
-                    <span class="material-symbols-outlined text-3xl sm:text-5xl text-[#f2ca50] group-hover:rotate-180 transition-transform duration-700">refresh</span>
-                </button>
-                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 font-label text-[8px] sm:text-[10px] font-bold text-[#f2ca50] uppercase tracking-[0.2em]">Spin</div>
-            </div>
-
-            <!-- Stats/Auto (Placeholder) -->
-            <div class="flex flex-col items-center">
-                <span class="font-label text-[8px] sm:text-[10px] uppercase tracking-widest text-[#d0c5af] mb-1">Auto Spin</span>
-                <button id="auto-btn" class="bg-[#001204] px-3 py-2 sm:px-6 sm:py-3 rounded-sm border border-[#f2ca50]/40 text-[#f2ca50] font-label font-bold text-xs sm:text-sm tracking-widest uppercase hover:bg-[#f2ca50] hover:text-[#3c2f00] transition-all">
-                    OFF
-                </button>
+        <!-- Win Display -->
+        <div class="flex flex-col items-center flex-1 max-w-[120px] sm:max-w-xs mx-2 sm:mx-4">
+            <span class="font-label text-[8px] sm:text-[10px] uppercase tracking-widest text-[#f2ca50]/60">Last Win</span>
+            <div class="w-full h-8 sm:h-12 rounded-lg win-display-box flex items-center justify-center">
+                <span id="bottom-win-display" class="font-headline font-black text-sm sm:text-3xl text-[#f2ca50] tracking-tight">$0</span>
             </div>
         </div>
-    </main>
+
+        <!-- Spacer for Spin Button -->
+        <div class="w-16 sm:w-32"></div>
+    </footer>
+
+    <!-- Corner Spin Button -->
+    <div class="fixed bottom-0 right-0 z-50">
+        <button id="spin-btn" class="relative w-20 h-20 sm:w-36 sm:h-36 rounded-tl-full border-t-4 border-l-4 border-[#d4af37] bg-gradient-to-br from-[#0b3d1b] to-[#001204] flex items-end justify-end p-4 sm:p-8 shadow-[-10px_-10px_30px_rgba(0,0,0,0.5)] active:scale-95 transition-all duration-150 group overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-tl from-[#f2ca50]/10 to-transparent"></div>
+            <span class="material-symbols-outlined text-3xl sm:text-6xl text-[#f2ca50] group-hover:rotate-180 transition-transform duration-700 z-10">refresh</span>
+            <div class="absolute top-4 sm:top-8 left-4 sm:left-8 font-label text-[8px] sm:text-[12px] font-bold text-[#f2ca50] uppercase tracking-[0.2em] -rotate-45">Spin</div>
+        </button>
+    </div>
 
     <!-- Win Overlay -->
     <div id="win-overlay" class="win-overlay fixed inset-0 z-[150] cursor-pointer w-full h-full">
@@ -231,7 +397,7 @@
     </div>
 
     <!-- Paytable Modal -->
-    <div id="paytable-modal" class="paytable-modal fixed inset-0 z-[110] bg-[#001806] p-4 sm:p-8 overflow-y-auto">
+    <div id="paytable-modal" class="paytable-modal fixed inset-0 z-[210] bg-[#001806] p-4 sm:p-8 overflow-y-auto">
         <div class="max-w-2xl mx-auto">
             <div class="flex justify-between items-center mb-6 sm:mb-8">
                 <h2 class="font-headline text-3xl sm:text-4xl font-black italic text-[#f2ca50]">PAY TABLE</h2>
@@ -250,17 +416,7 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-[#001204] rounded-t-lg shadow-2xl">
-        <button class="flex flex-col items-center justify-center bg-gradient-to-b from-[#ffe088] to-[#d4af37] text-[#001204] rounded-xl px-6 py-2 shadow-lg">
-            <span class="material-symbols-outlined">casino</span>
-            <span class="font-label font-semibold uppercase tracking-widest text-[10px]">PLAY</span>
-        </button>
-        <button id="nav-stats" class="flex flex-col items-center justify-center text-[#d0c5af]/60 px-6 py-2 hover:text-[#f2ca50]">
-            <span class="material-symbols-outlined">leaderboard</span>
-            <span class="font-label font-semibold uppercase tracking-widest text-[10px]">STATS</span>
-        </button>
-    </nav>
+    <!-- Bottom Navigation removed -->
 
     <script>
         /**
@@ -273,7 +429,7 @@
             BET_OPTIONS: [10, 25, 50, 100],
             REEL_COUNT: 5,
             ROW_COUNT: 3,
-            SYMBOL_HEIGHT: window.innerWidth < 640 ? 60 : 100,
+            SYMBOL_HEIGHT: (window.innerWidth < 640 || window.innerHeight < 500) ? 60 : 100,
             SPIN_DURATION: 2000,
             REEL_DELAY: 200,
             SUSPENSE_REEL: 2, // Index of reel to slow down (3rd reel)
@@ -304,7 +460,6 @@
             credits: CONFIG.STARTING_CREDITS,
             betIndex: 0,
             isSpinning: false,
-            autoSpin: false,
             stats: {
                 spins: 0,
                 totalWon: 0,
@@ -322,9 +477,9 @@
         const winOverlay = document.getElementById('win-overlay');
         const winTitle = document.getElementById('win-title');
         const winAmountBox = document.getElementById('win-amount-box');
+        const bottomWinDisplay = document.getElementById('bottom-win-display');
         const paytableModal = document.getElementById('paytable-modal');
         const paytableContent = document.getElementById('paytable-content');
-        const autoBtn = document.getElementById('auto-btn');
 
         /**
          * INITIALIZATION
@@ -376,30 +531,40 @@
 
         function populateReel(index, initialSymbols = null) {
             const strip = document.getElementById(`reel-${index}`);
-            if (!strip) {
-                console.error(`Reel strip not found in populateReel: reel-${index}`);
-                return;
-            }
+            if (!strip) return;
             
-            // Disable transition for the reset jump
             strip.style.transition = 'none';
             strip.innerHTML = '';
             
-            // Create a long strip for animation
-            const count = 50;
+            const count = 40;
+            const symbolHeight = CONFIG.SYMBOL_HEIGHT;
+            
             for (let i = 0; i < count; i++) {
-                const symbol = initialSymbols ? initialSymbols[i % initialSymbols.length] : getRandomSymbol();
+                let symbol;
+                if (initialSymbols) {
+                    // Place initial symbols at the bottom so we can start there
+                    if (i === count - 3) symbol = initialSymbols[0];
+                    else if (i === count - 2) symbol = initialSymbols[1];
+                    else if (i === count - 1) symbol = initialSymbols[2];
+                    else symbol = getRandomSymbol();
+                } else {
+                    symbol = getRandomSymbol();
+                }
+                
                 const el = createSymbolEl(symbol);
                 strip.appendChild(el);
             }
-            // Set initial position to show middle 3
-            strip.style.transform = `translateY(-${(count - 3) * CONFIG.SYMBOL_HEIGHT}px)`;
+            
+            // Show the last 3 symbols (index count-3, count-2, count-1)
+            // count-3 is the top one, count-2 is the middle (payline)
+            strip.style.transform = `translateY(-${(count - 3) * symbolHeight}px)`;
         }
 
         function createSymbolEl(symbol) {
             const el = document.createElement('div');
             el.className = 'symbol';
-            el.innerHTML = `<span class="material-symbols-outlined" style="color: ${symbol.color}; font-variation-settings: 'FILL' 1;">${symbol.icon}</span>`;
+            el.style.height = `${CONFIG.SYMBOL_HEIGHT}px`;
+            el.innerHTML = `<span class="material-symbols-outlined" style="color: ${symbol.color}; font-variation-settings: 'FILL' 1; font-size: ${CONFIG.SYMBOL_HEIGHT * 0.7}px">${symbol.icon}</span>`;
             el.dataset.id = symbol.id;
             return el;
         }
@@ -462,11 +627,6 @@
             } finally {
                 state.isSpinning = false;
                 updateUI();
-                if (state.autoSpin && state.credits >= CONFIG.BET_OPTIONS[state.betIndex]) {
-                    // Longer delay if there was a win to show celebration
-                    const autoDelay = (winResult && winResult.amount > 0) ? 2500 : 1000;
-                    setTimeout(spin, autoDelay);
-                }
             }
         }
 
@@ -497,52 +657,49 @@
 
         async function animateReel(index, finalSymbols) {
             const strip = document.getElementById(`reel-${index}`);
-            if (!strip) {
-                console.error(`Reel strip not found: reel-${index}`);
-                return Promise.resolve();
-            }
+            if (!strip) return Promise.resolve();
 
+            const symbolHeight = CONFIG.SYMBOL_HEIGHT;
             const duration = CONFIG.SPIN_DURATION + (index * CONFIG.REEL_DELAY);
-            let finalDuration = duration;
             
-            if (isNaN(finalDuration)) {
-                console.error("Invalid finalDuration in animateReel", finalDuration);
-                return Promise.resolve();
-            }
-
             return new Promise(resolve => {
-                strip.style.transition = `transform ${finalDuration}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-                
-                // Add final symbols to the top of the strip
-                const newSymbols = [...finalSymbols];
-                for(let i=0; i<3; i++) {
-                    const el = createSymbolEl(newSymbols[i]);
-                    strip.insertBefore(el, strip.firstChild);
+                // Add the final symbols to the TOP of the strip
+                // We'll animate from the bottom (current position) to the top
+                const children = Array.from(strip.children);
+                for (let i = 0; i < 3; i++) {
+                    const symbol = finalSymbols[i];
+                    const el = children[i];
+                    el.innerHTML = `<span class="material-symbols-outlined" style="color: ${symbol.color}; font-variation-settings: 'FILL' 1; font-size: ${symbolHeight * 0.7}px">${symbol.icon}</span>`;
+                    el.dataset.id = symbol.id;
                 }
 
-                // Trigger animation
-                setTimeout(() => {
-                    strip.style.transform = `translateY(0px)`;
-                }, 50);
+                strip.style.transition = `transform ${duration}ms cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+                
+                // Animate to the top (showing index 0, 1, 2)
+                // Index 0 is top, 1 is middle, 2 is bottom
+                strip.style.transform = `translateY(0px)`;
 
                 setTimeout(() => {
-                    // Cleanup and reset for next spin
+                    // Cleanup and reset for next spin (move back to bottom seamlessly)
                     populateReel(index, finalSymbols);
                     resolve();
-                }, finalDuration + 100);
+                }, duration + 50);
             });
         }
 
         function calculateWin(result) {
             const payline = result.map(reel => reel[1]); // Middle row
-            let bestWin = { amount: 0, type: 'NONE', symbol: null, count: 0 };
+            let bestWin = { amount: 0, type: 'NONE', symbol: null, count: 0, winningIndices: [] };
 
             // Check for matches starting from left
             const firstSymbol = payline[0];
             let count = 1;
+            let winningIndices = [0];
+
             for (let i = 1; i < CONFIG.REEL_COUNT; i++) {
                 if (payline[i].id === firstSymbol.id || payline[i].id === 'wild' || firstSymbol.id === 'wild') {
                     count++;
+                    winningIndices.push(i);
                 } else {
                     break;
                 }
@@ -566,7 +723,8 @@
                 bestWin = {
                     amount: winAmount,
                     symbol: actualSymbol,
-                    count: count
+                    count: count,
+                    winningIndices: winningIndices
                 };
             }
 
@@ -581,10 +739,41 @@
             return bestWin;
         }
 
-        function handleWin(win) {
+        async function handleWin(win) {
             if (!win || typeof win.amount !== 'number' || isNaN(win.amount)) return;
             
             if (win.amount > 0) {
+                // 1. Tallying Phase: Highlight winning symbols
+                const reels = document.querySelectorAll('.reel-strip');
+                
+                // Show a "Tallying..." indicator
+                const tallyIndicator = document.createElement('div');
+                tallyIndicator.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] bg-[#f2ca50] text-[#001204] px-6 py-2 rounded-full font-label font-bold text-xl shadow-2xl animate-pulse pointer-events-none';
+                tallyIndicator.innerText = 'TALLYING WIN...';
+                document.body.appendChild(tallyIndicator);
+
+                win.winningIndices.forEach(reelIdx => {
+                    const strip = reels[reelIdx];
+                    // The middle symbol is the one we care about (index 1 in the final result)
+                    // After populateReel, the visible symbols are at the end of the strip (count-3, count-2, count-1)
+                    const symbolEl = strip.children[strip.children.length - 2];
+                    if (symbolEl) {
+                        symbolEl.classList.add('winning-symbol');
+                        
+                        // Add a small tally label
+                        const label = document.createElement('div');
+                        label.className = 'win-tally-label';
+                        label.innerText = `+${(win.amount / win.count).toLocaleString()}`;
+                        symbolEl.appendChild(label);
+                    }
+                });
+
+                // Wait for the player to process the line win
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Remove tally indicator
+                tallyIndicator.remove();
+
                 state.credits += win.amount;
                 state.stats.totalWon += win.amount;
                 if (win.amount > state.stats.biggestWin) state.stats.biggestWin = win.amount;
@@ -638,11 +827,15 @@
                 // Easing function for a smoother count-up (easeOutExpo)
                 const easedProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
                 const current = Math.floor(easedProgress * (end - start) + start);
-                element.innerText = `+$${current.toLocaleString()}`;
+                const formatted = `$${current.toLocaleString()}`;
+                element.innerText = `+${formatted}`;
+                if (bottomWinDisplay) bottomWinDisplay.innerText = formatted;
                 if (progress < 1) {
                     window.requestAnimationFrame(step);
                 } else {
-                    element.innerText = `+$${end.toLocaleString()}`;
+                    const finalFormatted = `$${end.toLocaleString()}`;
+                    element.innerText = `+${finalFormatted}`;
+                    if (bottomWinDisplay) bottomWinDisplay.innerText = finalFormatted;
                 }
             };
             window.requestAnimationFrame(step);
@@ -659,6 +852,12 @@
             spinBtn.disabled = isDisabled;
             spinBtn.style.opacity = isDisabled ? '0.5' : '1';
             spinBtn.style.cursor = isDisabled ? 'not-allowed' : 'pointer';
+
+            const maxBetBtn = document.getElementById('max-bet-btn');
+            if (maxBetBtn) {
+                maxBetBtn.disabled = isDisabled;
+                maxBetBtn.style.opacity = isDisabled ? '0.5' : '1';
+            }
             
             const icon = spinBtn.querySelector('.material-symbols-outlined');
             if (state.isSpinning) {
@@ -666,11 +865,6 @@
             } else {
                 icon.classList.remove('animate-spin');
             }
-
-            autoBtn.innerText = state.autoSpin ? 'ON' : 'OFF';
-            autoBtn.className = state.autoSpin ? 
-                'bg-[#f2ca50] px-3 py-2 sm:px-6 sm:py-3 rounded-sm border border-[#f2ca50]/40 text-[#3c2f00] font-label font-bold text-xs sm:text-sm tracking-widest uppercase' :
-                'bg-[#001204] px-3 py-2 sm:px-6 sm:py-3 rounded-sm border border-[#f2ca50]/40 text-[#f2ca50] font-label font-bold text-xs sm:text-sm tracking-widest uppercase hover:bg-[#f2ca50] hover:text-[#3c2f00] transition-all';
         }
 
         /**
@@ -690,10 +884,10 @@
             updateUI();
         });
 
-        document.getElementById('auto-btn').addEventListener('click', () => {
-            state.autoSpin = !state.autoSpin;
+        document.getElementById('max-bet-btn').addEventListener('click', () => {
+            if (state.isSpinning) return;
+            state.betIndex = CONFIG.BET_OPTIONS.length - 1;
             updateUI();
-            if (state.autoSpin && !state.isSpinning) spin();
         });
 
         document.getElementById('win-overlay').addEventListener('click', () => {
@@ -708,15 +902,19 @@
             paytableModal.classList.remove('active');
         });
 
-        document.getElementById('nav-stats').addEventListener('click', () => {
-            alert(`Session Stats:\nSpins: ${state.stats.spins}\nTotal Won: $${state.stats.totalWon}\nBiggest Win: $${state.stats.biggestWin}`);
-        });
-
         // Initialize
         init();
 
         window.addEventListener('resize', () => {
-            CONFIG.SYMBOL_HEIGHT = window.innerWidth < 640 ? 60 : 100;
+            const oldHeight = CONFIG.SYMBOL_HEIGHT;
+            CONFIG.SYMBOL_HEIGHT = (window.innerWidth < 640 || window.innerHeight < 500) ? 40 : 100;
+            
+            // If height changed, we need to re-populate reels to match new symbol size
+            if (oldHeight !== CONFIG.SYMBOL_HEIGHT && !state.isSpinning) {
+                for (let i = 0; i < CONFIG.REEL_COUNT; i++) {
+                    populateReel(i);
+                }
+            }
         });
 
     </script>
