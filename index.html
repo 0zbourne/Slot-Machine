@@ -1134,15 +1134,24 @@
             const win = calculateWin(result);
             if (win.amount === 0 && Math.random() < CONFIG.NEAR_MISS_RATE) {
                 // Force a near miss on the middle payline
-                // Match first 2 high value symbols
-                const highSymbols = SYMBOLS.slice(0, 3);
-                const target = highSymbols[Math.floor(Math.random() * highSymbols.length)];
+                // Use a wider variety of symbols for near misses, not just the top 3
+                const possibleTargets = SYMBOLS.slice(0, 5); 
+                const target = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
+                
                 result[0][1] = target;
                 result[1][1] = target;
-                // Reel 3 is one off
+                
+                // Reel 3 is the "teaser" - it shows the symbol above or below the payline
                 const neighbors = [0, 2];
                 result[2][neighbors[Math.floor(Math.random() * 2)]] = target;
-                result[2][1] = getRandomSymbol(); // Ensure it's not the target
+                
+                // CRITICAL: Ensure Reel 3's payline symbol is NOT the target and NOT a wild
+                // otherwise we accidentally turn a near-miss into a real win
+                let failSymbol = getRandomSymbol();
+                while (failSymbol.id === target.id || failSymbol.id === 'wild') {
+                    failSymbol = getRandomSymbol();
+                }
+                result[2][1] = failSymbol;
             }
 
             return result;
