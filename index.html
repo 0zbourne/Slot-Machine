@@ -1420,6 +1420,26 @@
             paytableModal.classList.remove('active');
         });
 
+        // Global click to spin (anywhere except buttons and active overlays)
+        document.addEventListener('click', (e) => {
+            // 1. Exclude clicks on buttons or inside buttons
+            if (e.target.closest('button')) return;
+            
+            // 2. Exclude clicks if an overlay or modal is currently active
+            const winOverlay = document.getElementById('win-overlay');
+            const paytableModal = document.getElementById('paytable-modal');
+            const loadingScreen = document.getElementById('loading-screen');
+            const rotationOverlay = document.getElementById('rotation-overlay');
+
+            if (winOverlay && winOverlay.classList.contains('active')) return;
+            if (paytableModal && paytableModal.classList.contains('active')) return;
+            if (loadingScreen && loadingScreen.style.display !== 'none') return;
+            if (rotationOverlay && getComputedStyle(rotationOverlay).display !== 'none') return;
+
+            // 3. Trigger spin (spin function handles credit check and spinning state)
+            spin();
+        });
+
         // Initialize
         init();
 
