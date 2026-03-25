@@ -1,21 +1,15 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Info, 
-  RefreshCw, 
+  Volume2, 
+  VolumeX, 
   Minus, 
   Plus, 
   Trophy, 
   Star, 
-  History, 
-  Menu,
   X,
-  ChevronRight
+  RotateCw
 } from 'lucide-react';
 
 /**
@@ -28,28 +22,127 @@ const CONFIG = {
   BET_OPTIONS: [10, 25, 50, 100],
   REEL_COUNT: 5,
   ROW_COUNT: 3,
-  SYMBOL_HEIGHT: 100,
   SPIN_DURATION: 2000,
   REEL_DELAY: 200,
   SUSPENSE_REEL: 2, // Index of reel to slow down (3rd reel)
 };
 
 const SYMBOLS = [
-  { id: 'wild', name: 'Golden Star', icon: Star, value: 50, weight: 2, color: '#f2ca50' },
-  { id: 'diamond', name: 'Diamond', icon: Trophy, value: 25, weight: 5, color: '#baf0be' },
-  { id: 'seven', name: 'Lucky 7', icon: () => <span className="font-display font-black italic text-6xl text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.4)]">7</span>, value: 15, weight: 8, color: '#ffb4ab' },
-  { id: 'bell', name: 'Bell', icon: () => <span className="material-symbols-outlined text-6xl" style={{fontVariationSettings: "'FILL' 1"}}>notifications</span>, value: 10, weight: 12, color: '#fbbc00' },
-  { id: 'bar3', name: 'Triple Bar', icon: () => <div className="flex flex-col gap-1.5"><div className="w-16 h-2.5 bg-gradient-to-r from-gray-400 to-gray-600 rounded-sm shadow-inner"></div><div className="w-16 h-2.5 bg-gradient-to-r from-gray-400 to-gray-600 rounded-sm shadow-inner"></div><div className="w-16 h-2.5 bg-gradient-to-r from-gray-400 to-gray-600 rounded-sm shadow-inner"></div></div>, value: 5, weight: 15, color: '#99907c' },
-  { id: 'bar2', name: 'Double Bar', icon: () => <div className="flex flex-col gap-1.5"><div className="w-16 h-2.5 bg-gradient-to-r from-gray-400 to-gray-600 rounded-sm shadow-inner"></div><div className="w-16 h-2.5 bg-gradient-to-r from-gray-400 to-gray-600 rounded-sm shadow-inner"></div></div>, value: 3, weight: 20, color: '#99907c' },
-  { id: 'bar1', name: 'Single Bar', icon: () => <div className="w-16 h-2.5 bg-gradient-to-r from-gray-400 to-gray-600 rounded-sm shadow-inner"></div>, value: 2, weight: 25, color: '#99907c' },
-  { id: 'cherry', name: 'Cherry', icon: () => <span className="material-symbols-outlined text-6xl text-red-500" style={{fontVariationSettings: "'FILL' 1"}}>nutrition</span>, value: 1, weight: 35, color: '#ff4444' }
+  { id: 'wild', name: 'Golden Star', icon: 'stars', value: 50, weight: 2, color: '#f2ca50', premium: true },
+  { id: 'diamond', name: 'Diamond', icon: 'diamond', value: 25, weight: 5, color: '#baf0be' },
+  { id: 'seven', name: 'Lucky 7', icon: 'looks_7', value: 15, weight: 8, color: '#ff4444' },
+  { id: 'bell', name: 'Bell', icon: 'notifications', value: 10, weight: 12, color: '#fbbc00' },
+  { id: 'bar3', name: 'Triple Bar', icon: 'bar_triple', value: 5, weight: 15, color: '#99907c' },
+  { id: 'bar2', name: 'Double Bar', icon: 'bar_double', value: 3, weight: 20, color: '#99907c' },
+  { id: 'bar1', name: 'Single Bar', icon: 'bar_single', value: 2, weight: 25, color: '#99907c' },
+  { id: 'cherry', name: 'Cherry', icon: 'eco', value: 1, weight: 35, color: '#ff4444' }
 ];
 
-const PAYOUTS = {
-  3: 1,
-  4: 5,
-  5: 20
+const PAYOUTS: Record<number, number> = {
+  3: 3,
+  4: 15,
+  5: 90
 };
+
+// Sound Manager using Web Audio API
+class SoundManager {
+  ctx: AudioContext | null = null;
+  isMuted: boolean = false;
+  masterGain: GainNode | null = null;
+
+  init() {
+    if (this.ctx) return;
+    this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    this.masterGain = this.ctx.createGain();
+    this.masterGain.connect(this.ctx.destination);
+    this.masterGain.gain.value = 0.3;
+  }
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    if (this.masterGain) {
+      this.masterGain.gain.value = this.isMuted ? 0 : 0.3;
+    }
+    return this.isMuted;
+  }
+
+  createOscillator(freq: number, type: OscillatorType = 'sine', duration = 0.1, gainValue = 0.1) {
+    if (!this.ctx || this.isMuted) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    
+    gain.gain.setValueAtTime(gainValue, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+    osc.connect(gain);
+    if (this.masterGain) gain.connect(this.masterGain);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + duration);
+  }
+
+  playSpinStart() {
+    this.init();
+    this.createOscillator(150, 'square', 0.15, 0.1);
+    this.createOscillator(80, 'sine', 0.2, 0.2);
+  }
+
+  playReelStop(index: number) {
+    this.init();
+    const freq = 200 - (index * 20);
+    this.createOscillator(freq, 'triangle', 0.1, 0.15);
+  }
+
+  playNearMiss() {
+    this.init();
+    this.createOscillator(880, 'sine', 0.5, 0.1);
+    setTimeout(() => this.createOscillator(932, 'sine', 0.4, 0.08), 50);
+  }
+
+  playLDW() {
+    this.init();
+    [440, 554, 659].forEach((f, i) => {
+      setTimeout(() => this.createOscillator(f, 'sine', 0.3, 0.1), i * 100);
+    });
+  }
+
+  playSmallWin() {
+    this.init();
+    [523, 659, 783, 1046].forEach((f, i) => {
+      setTimeout(() => this.createOscillator(f, 'sine', 0.4, 0.1), i * 80);
+    });
+  }
+
+  playBigWin() {
+    this.init();
+    const notes = [523, 659, 783, 1046, 1318, 1567];
+    notes.forEach((f, i) => {
+      setTimeout(() => this.createOscillator(f, 'square', 0.5, 0.05), i * 120);
+    });
+  }
+
+  playMegaWin() {
+    this.init();
+    for (let i = 0; i < 20; i++) {
+      setTimeout(() => {
+        const f = 200 + (i * 100);
+        this.createOscillator(f, 'sawtooth', 0.6, 0.03);
+      }, i * 100);
+    }
+  }
+
+  playTone(freq: number, type: OscillatorType = 'sine', duration = 0.1, gainValue = 0.1) {
+    this.init();
+    this.createOscillator(freq, type, duration, gainValue);
+  }
+}
+
+const sounds = new SoundManager();
 
 export default function App() {
   const [credits, setCredits] = useState(CONFIG.STARTING_CREDITS);
@@ -58,21 +151,20 @@ export default function App() {
   const [reels, setReels] = useState<any[][]>([]);
   const [win, setWin] = useState<any>(null);
   const [showPaytable, setShowPaytable] = useState(false);
-  const [stats, setStats] = useState({ spins: 0, totalWon: 0, biggestWin: 0 });
-  const [nearMissReel, setNearMissReel] = useState<number | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [recentWins, setRecentWins] = useState<number[]>([]);
+  const [suspenseActive, setSuspenseActive] = useState(false);
+  const [winningIndices, setWinningIndices] = useState<number[]>([]);
 
   const bet = CONFIG.BET_OPTIONS[betIndex];
 
-  // Initialize reels and loading state
+  // Initialize reels
   useEffect(() => {
     const initialReels = Array(CONFIG.REEL_COUNT).fill(0).map(() => 
       Array(CONFIG.ROW_COUNT).fill(0).map(() => getRandomSymbol())
     );
     setReels(initialReels);
 
-    // Simulate loading
     const timer = setTimeout(() => setIsLoading(false), 2500);
     return () => clearTimeout(timer);
   }, []);
@@ -87,23 +179,33 @@ export default function App() {
     return SYMBOLS[SYMBOLS.length - 1];
   };
 
-  const calculateWin = (currentReels: any[][]) => {
+  const calculateWin = useCallback((currentReels: any[][]) => {
     const payline = currentReels.map(reel => reel[1]); // Middle row
-    let bestWin = { amount: 0, type: 'NONE', symbol: null, count: 0 };
+    let bestWin = { amount: 0, type: 'NONE', symbol: null, count: 0, winningIndices: [] as number[] };
 
-    const firstSymbol = payline[0];
+    let matchSymbolId = payline[0].id;
     let count = 1;
+    let winningIndices = [0];
+
     for (let i = 1; i < CONFIG.REEL_COUNT; i++) {
-      if (payline[i].id === firstSymbol.id || payline[i].id === 'wild' || firstSymbol.id === 'wild') {
+      const currentSymbol = payline[i];
+      if (matchSymbolId === 'wild') {
+        if (currentSymbol.id !== 'wild') {
+          matchSymbolId = currentSymbol.id;
+        }
         count++;
+        winningIndices.push(i);
+      } else if (currentSymbol.id === matchSymbolId || currentSymbol.id === 'wild') {
+        count++;
+        winningIndices.push(i);
       } else {
         break;
       }
     }
 
     if (count >= 3) {
-      let actualSymbol = firstSymbol;
-      if (firstSymbol.id === 'wild') {
+      let actualSymbol = payline[0];
+      if (actualSymbol.id === 'wild') {
         for (let i = 1; i < count; i++) {
           if (payline[i].id !== 'wild') {
             actualSymbol = payline[i];
@@ -112,13 +214,14 @@ export default function App() {
         }
       }
 
-      const multiplier = PAYOUTS[count as keyof typeof PAYOUTS] || 0;
+      const multiplier = PAYOUTS[count] || 0;
       const winAmount = actualSymbol.value * multiplier * bet;
       
       bestWin = {
         amount: winAmount,
         symbol: actualSymbol,
         count: count,
+        winningIndices: winningIndices,
         type: 'NONE'
       };
 
@@ -129,289 +232,289 @@ export default function App() {
     }
 
     return bestWin;
-  };
+  }, [bet]);
 
-  const [spinningReels, setSpinningReels] = useState<boolean[]>([false, false, false, false, false]);
-
-  const spin = useCallback(() => {
+  const spin = useCallback(async () => {
     if (isSpinning || credits < bet) return;
 
+    sounds.playSpinStart();
     setIsSpinning(true);
-    setSpinningReels([true, true, true, true, true]);
     setCredits(prev => prev - bet);
     setWin(null);
-    setNearMissReel(null);
-    setStats(prev => ({ ...prev, spins: prev.spins + 1 }));
+    setWinningIndices([]);
+    setSuspenseActive(false);
 
     // Generate outcome
     let result = Array(CONFIG.REEL_COUNT).fill(0).map(() => 
       Array(CONFIG.ROW_COUNT).fill(0).map(() => getRandomSymbol())
     );
 
-    const initialWin = calculateWin(result);
-    
     // Near Miss Logic
-    let isNearMiss = false;
+    const initialWin = calculateWin(result);
     if (initialWin.amount === 0 && Math.random() < CONFIG.NEAR_MISS_RATE) {
-      const highSymbols = SYMBOLS.slice(0, 3);
-      const target = highSymbols[Math.floor(Math.random() * highSymbols.length)];
+      const possibleTargets = SYMBOLS.slice(0, 5); 
+      const target = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
       result[0][1] = target;
       result[1][1] = target;
       const neighbors = [0, 2];
-      const missPos = neighbors[Math.floor(Math.random() * 2)];
-      result[2][missPos] = target;
-      result[2][1] = getRandomSymbol();
-      while(result[2][1].id === target.id) result[2][1] = getRandomSymbol();
-      isNearMiss = true;
+      result[2][neighbors[Math.floor(Math.random() * 2)]] = target;
+      let failSymbol = getRandomSymbol();
+      while (failSymbol.id === target.id || failSymbol.id === 'wild') {
+        failSymbol = getRandomSymbol();
+      }
+      result[2][1] = failSymbol;
     }
 
-    // Check for suspense (reels 1-2 match)
-    const isSuspense = result[0][1].id === result[1][1].id || result[0][1].id === 'wild' || result[1][1].id === 'wild';
+    // Suspense Detection
+    const s0 = result[0][1].id;
+    const s1 = result[1][1].id;
+    const highValueIds = ['wild', 'diamond', 'seven'];
+    const isSuspense = (s0 === s1 || s0 === 'wild' || s1 === 'wild') && 
+                      (highValueIds.includes(s0) || highValueIds.includes(s1));
 
-    // Stop reels one by one
-    const stopReel = (idx: number) => {
-      setSpinningReels(prev => {
+    // Animate Reels
+    const stopReel = (idx: number, finalSymbols: any[]) => {
+      setReels(prev => {
         const next = [...prev];
-        next[idx] = false;
+        next[idx] = finalSymbols;
         return next;
       });
-      
-      const newReels = [...reels];
-      newReels[idx] = result[idx];
-      setReels([...newReels]);
-
-      if (idx === CONFIG.REEL_COUNT - 1) {
-        const finalWin = calculateWin(result);
-        if (finalWin.amount > 0) {
-          setWin(finalWin);
-          setCredits(prev => prev + finalWin.amount);
-          setRecentWins(prev => [finalWin.amount, ...prev].slice(0, 5));
-          setStats(prev => ({
-            ...prev,
-            totalWon: prev.totalWon + finalWin.amount,
-            biggestWin: Math.max(prev.biggestWin, finalWin.amount)
-          }));
-        }
-        if (isNearMiss) setNearMissReel(2);
-        setIsSpinning(false);
-      }
+      sounds.playReelStop(idx);
     };
 
     // Schedule stops
-    setTimeout(() => stopReel(0), 1000);
-    setTimeout(() => stopReel(1), 1400);
+    setTimeout(() => stopReel(0, result[0]), CONFIG.SPIN_DURATION);
+    setTimeout(() => stopReel(1, result[1]), CONFIG.SPIN_DURATION + CONFIG.REEL_DELAY);
     
-    // Reel 3 Suspense
-    const reel3Delay = isSuspense ? 3000 : 1800;
-    setTimeout(() => stopReel(2), reel3Delay);
+    const reel3Delay = isSuspense ? 4500 : CONFIG.SPIN_DURATION + (CONFIG.REEL_DELAY * 2);
     
-    setTimeout(() => stopReel(3), reel3Delay + 400);
-    setTimeout(() => stopReel(4), reel3Delay + 800);
+    if (isSuspense) {
+      setTimeout(() => {
+        setSuspenseActive(true);
+        sounds.playNearMiss();
+      }, CONFIG.SPIN_DURATION + CONFIG.REEL_DELAY);
+    }
 
-  }, [isSpinning, credits, bet, reels]);
+    setTimeout(() => {
+      stopReel(2, result[2]);
+      setSuspenseActive(false);
+    }, reel3Delay);
+    
+    setTimeout(() => stopReel(3, result[3]), reel3Delay + CONFIG.REEL_DELAY);
+    setTimeout(() => {
+      stopReel(4, result[4]);
+      
+      // Finalize
+      const finalWin = calculateWin(result);
+      if (finalWin.amount > 0) {
+        setTimeout(() => {
+          setWin(finalWin);
+          setWinningIndices(finalWin.winningIndices);
+          setCredits(prev => prev + finalWin.amount);
+          
+          if (finalWin.type === 'LDW') sounds.playLDW();
+          else if (finalWin.type === 'MEGA') sounds.playMegaWin();
+          else if (finalWin.type === 'BIG') sounds.playBigWin();
+          else sounds.playSmallWin();
+        }, 500);
+      }
+      setIsSpinning(false);
+    }, reel3Delay + (CONFIG.REEL_DELAY * 2));
+
+  }, [isSpinning, credits, bet, calculateWin]);
+
+  const renderSymbol = (symbol: any, isWinning: boolean) => {
+    const isPremium = symbol.premium;
+    
+    if (symbol.id.startsWith('bar')) {
+      const count = parseInt(symbol.id.replace('bar', ''));
+      return (
+        <div className={`symbol-inner ${isWinning ? 'winning-symbol' : ''}`}>
+          <div className="bar-stack">
+            {Array(count).fill(0).map((_, i) => <div key={i} className="bar-unit"></div>)}
+          </div>
+        </div>
+      );
+    }
+
+    if (symbol.id === 'seven') {
+      return (
+        <div className={`symbol-inner ${isWinning ? 'winning-symbol' : ''}`}>
+          <span className="font-headline font-black text-4xl sm:text-5xl italic text-[#ff4444] drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]" style={{ transform: 'skewX(-10deg)' }}>7</span>
+        </div>
+      );
+    }
+
+    if (symbol.id === 'cherry') {
+      return (
+        <div className={`symbol-inner ${isWinning ? 'winning-symbol' : ''}`}>
+          <div className="relative">
+            <div className="w-6 h-6 bg-[#ff4444] rounded-full shadow-lg"></div>
+            <div className="absolute -top-2 left-3 w-4 h-4 border-t-2 border-l-2 border-[#4caf50] rounded-tl-full"></div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`symbol-inner ${isPremium ? 'symbol-premium' : ''} ${isWinning ? 'winning-symbol' : ''}`}>
+        <span className="material-symbols-outlined text-4xl sm:text-5xl" style={{ color: isPremium ? 'inherit' : symbol.color, fontVariationSettings: "'FILL' 1" }}>
+          {symbol.icon}
+        </span>
+      </div>
+    );
+  };
 
   return (
-    <div className="flex flex-col h-screen bg-emerald-deep text-white font-sans overflow-hidden select-none">
+    <div className="min-h-screen bg-[#001806] text-white font-sans overflow-hidden select-none flex flex-col">
       {/* Loading Screen */}
       <AnimatePresence>
         {isLoading && (
           <motion.div
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-emerald-deep flex flex-col items-center justify-center felt-texture"
+            className="fixed inset-0 z-[200] bg-[#001806] flex flex-col items-center justify-center felt-texture"
           >
-            <motion.div
-              animate={{ 
-                scale: [1, 1.05, 1],
-                rotate: [0, 2, -2, 0]
-              }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className="mb-8 relative"
-            >
-              <div className="absolute inset-0 blur-3xl bg-gold/30 rounded-full"></div>
-              <Trophy className="w-32 h-32 text-gold-light relative z-10 glow-gold" fill="currentColor" />
+            <motion.div animate={{ y: [0, -20, 0] }} transition={{ repeat: Infinity, duration: 2 }} className="mb-8">
+              <span className="material-symbols-outlined text-8xl text-[#f2ca50]" style={{ fontVariationSettings: "'FILL' 1" }}>trophy</span>
             </motion.div>
-            <h1 className="font-display text-7xl font-black italic text-gold-light tracking-tighter mb-2 skew-x-[-10deg]">THE GILDED SALON</h1>
-            <div className="w-80 h-1 bg-emerald-felt rounded-full overflow-hidden relative border border-white/5">
+            <h1 className="font-headline text-4xl font-black italic text-[#f2ca50] tracking-widest mb-4">THE GILDED SALON</h1>
+            <div className="w-48 h-1 bg-[#0b3d1b] rounded-full overflow-hidden">
               <motion.div 
-                initial={{ x: "-100%" }}
-                animate={{ x: "0%" }}
-                transition={{ duration: 2.5, ease: "easeInOut" }}
-                className="w-full h-full bg-gold-light shadow-[0_0_20px_rgba(242,202,80,0.8)]"
+                initial={{ width: 0 }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 2 }}
+                className="h-full bg-[#f2ca50]"
               />
             </div>
-            <p className="mt-8 font-serif italic text-sm uppercase tracking-[0.5em] text-gold-light/30">ESTABLISHED 1924</p>
+            <p className="mt-4 font-label text-[10px] uppercase tracking-[0.3em] text-[#f2ca50]/60">Preparing your private table...</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Top Bar - Editorial Style */}
-      <nav className="flex justify-between items-end px-10 h-24 glass-panel border-b border-white/5 shadow-2xl z-50 pb-4">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-serif italic uppercase tracking-[0.3em] text-gold-light/40 mb-1">Current Liquidity</span>
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-gold-light animate-pulse shadow-[0_0_10px_rgba(242,202,80,0.8)]"></div>
-            <span className="font-mono font-bold text-3xl tracking-tighter text-gold-light neon-text">
-              ${credits.toLocaleString()}
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex flex-col items-center mb-1">
-          <h1 className="font-display text-4xl font-black italic tracking-tighter text-gold-light skew-x-[-5deg]">GILDED</h1>
-          <div className="h-[2px] w-full bg-gold/40 mt-0.5"></div>
+      {/* Top Bar */}
+      <header style={{ height: 'var(--header-h)' }} className="fixed top-0 w-full z-50 bar-bg border-b flex items-center justify-between px-4 sm:px-8 shadow-2xl">
+        <div className="flex items-center gap-2 pill-container px-3 header-item rounded-full">
+          <span className="material-symbols-outlined text-[#f2ca50] icon-scale" style={{ fontVariationSettings: "'FILL' 1" }}>monetization_on</span>
+          <span className="font-headline font-bold tracking-tight text-[#f2ca50] header-item flex items-center">
+            ${credits.toLocaleString()}
+          </span>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="hidden md:flex flex-col items-end">
-            <span className="text-[10px] font-serif italic uppercase tracking-[0.3em] text-gold-light/40 mb-1">Recent Wins</span>
-            <div className="flex gap-2">
-              {recentWins.length > 0 ? recentWins.map((w, i) => (
-                <motion.span 
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  key={i} 
-                  className="font-mono text-[10px] text-gold-light/60 bg-white/5 px-2 py-0.5 rounded"
-                >
-                  ${w}
-                </motion.span>
-              )) : <span className="font-mono text-[10px] text-white/20 italic">No activity</span>}
-            </div>
-          </div>
+        <div className="flex items-center gap-2 header-item">
           <button 
-            onClick={() => setShowPaytable(true)} 
-            className="w-12 h-12 rounded-2xl glass-panel flex items-center justify-center text-gold-light hover:bg-white/10 transition-all border border-gold/20 shadow-lg group"
+            onClick={() => {
+              const muted = sounds.toggleMute();
+              setIsMuted(muted);
+            }}
+            className="aspect-square h-10 rounded-full bg-[#0b3d1b] border border-[#f2ca50]/30 flex items-center justify-center text-[#f2ca50] hover:bg-[#11421f] shadow-xl transition-all"
           >
-            <Info className="w-6 h-6 group-hover:scale-110 transition-transform" />
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+          </button>
+          <button 
+            onClick={() => setShowPaytable(true)}
+            className="aspect-square h-10 rounded-full bg-[#0b3d1b] border border-[#f2ca50]/30 flex items-center justify-center text-[#f2ca50] hover:bg-[#11421f] shadow-xl transition-all"
+          >
+            <Info size={20} />
           </button>
         </div>
-      </nav>
+      </header>
 
       {/* Main Game Area */}
-      <main className="flex-1 flex flex-col items-center justify-center p-8 relative felt-texture overflow-hidden">
-        {/* Decorative Background Elements */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-gold/5 blur-[100px] rounded-full"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gold/5 blur-[120px] rounded-full"></div>
-
-        {/* Slot Machine Frame - Heavy Hardware Look */}
-        <div className="relative w-full max-w-6xl bg-[#080808] rounded-[3rem] p-8 border-[16px] border-[#121212] shadow-[0_60px_120px_rgba(0,0,0,0.9),inset_0_2px_20px_rgba(255,255,255,0.05)] overflow-hidden leather-trim">
-          {/* Decorative Screws */}
-          <div className="absolute top-4 left-4 w-3 h-3 rounded-full bg-[#222] border border-white/5 shadow-inner"></div>
-          <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-[#222] border border-white/5 shadow-inner"></div>
-          <div className="absolute bottom-4 left-4 w-3 h-3 rounded-full bg-[#222] border border-white/5 shadow-inner"></div>
-          <div className="absolute bottom-4 right-4 w-3 h-3 rounded-full bg-[#222] border border-white/5 shadow-inner"></div>
-
-          {/* Inner Gold Bezel */}
-          <div className="absolute inset-2 border-[1px] border-gold/30 rounded-[2.5rem] pointer-events-none"></div>
+      <main style={{ paddingTop: 'var(--header-h)', paddingBottom: 'var(--footer-h)' }} className="flex-1 flex flex-col items-center justify-center p-4 relative">
+        <div className={`slot-machine-container relative w-full max-w-2xl bg-[#001204] rounded-xl p-3 border-4 border-[#4d4635]/40 shadow-2xl overflow-hidden ${suspenseActive ? 'suspense-active' : ''}`}>
+          <div className="payline-indicator"></div>
           
-          {/* Payline Indicator - More Dramatic */}
-          <div className="absolute inset-x-0 top-1/2 h-[2px] bg-gradient-to-r from-transparent via-gold-light/40 to-transparent -translate-y-1/2 z-20 pointer-events-none"></div>
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-12 bg-gold-light/10 blur-md z-20 rounded-full"></div>
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-12 bg-gold-light/10 blur-md z-20 rounded-full"></div>
-          
-          {/* Reels Grid */}
-          <div className="grid grid-cols-5 gap-3 h-[420px] relative reel-shadow bg-[#020202] rounded-2xl overflow-hidden border border-white/5">
+          <div className="grid grid-cols-5 gap-1 relative" style={{ height: 'calc(var(--symbol-h) * 3)' }}>
             {reels.map((reel, rIdx) => (
-              <div key={rIdx} className="relative flex flex-col justify-around items-center border-x border-white/5 overflow-hidden group">
-                {/* Reel Divider Glow */}
-                <div className="absolute inset-y-0 left-0 w-[1px] bg-gradient-to-b from-transparent via-white/5 to-transparent"></div>
-                
-                <motion.div
-                  animate={spinningReels[rIdx] ? {
-                    y: [0, -1400],
-                    transition: { 
-                      duration: rIdx === 2 && spinningReels[0] === false && spinningReels[1] === false && (reels[0][1].id === reels[1][1].id) ? 0.35 : 0.07, 
-                      repeat: Infinity, 
-                      ease: "linear"
-                    }
-                  } : { y: 0 }}
-                  className="flex flex-col gap-10"
+              <div key={rIdx} className={`reel-container h-full relative flex flex-col ${suspenseActive && rIdx !== 2 ? 'suspense-reel-dim' : ''}`}>
+                <motion.div 
+                  className="reel-strip absolute w-full"
+                  animate={isSpinning ? { y: [0, -1000] } : { y: 0 }}
+                  transition={isSpinning ? { repeat: Infinity, duration: 0.1, ease: "linear" } : { duration: 0.5 }}
+                  style={{ transform: 'translateY(calc(-1 * var(--symbol-h)))' }}
                 >
                   {reel.map((symbol, sIdx) => (
-                    <div 
-                      key={sIdx} 
-                      className={`h-[140px] w-full flex items-center justify-center transition-all duration-500 ${
-                        nearMissReel === rIdx && sIdx === 1 ? 'bg-gold/10' : ''
-                      }`}
-                    >
-                      <div className={`transform transition-all duration-500 ${spinningReels[rIdx] ? 'blur-[4px] scale-90 opacity-60' : 'scale-125 hover:scale-135'}`}>
-                        {typeof symbol.icon === 'function' ? <symbol.icon /> : <symbol.icon className="w-20 h-20 glow-gold" style={{ color: symbol.color }} />}
-                      </div>
+                    <div key={sIdx} className="symbol">
+                      {renderSymbol(symbol, winningIndices.includes(rIdx) && sIdx === 1)}
                     </div>
                   ))}
                 </motion.div>
-                
-                {/* Reel Suspense Glow - High Impact */}
-                {spinningReels[rIdx] && rIdx === 2 && !spinningReels[1] && (reels[0][1].id === reels[1][1].id) && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: [0, 0.4, 0] }}
-                    transition={{ duration: 0.5, repeat: Infinity }}
-                    className="absolute inset-0 bg-gold/20 pointer-events-none z-10"
-                  ></motion.div>
-                )}
               </div>
             ))}
           </div>
         </div>
-
-        {/* Controls - Hardware Console Style */}
-        <div className="mt-16 w-full max-w-4xl flex items-center justify-between gap-12 z-30">
-          {/* Bet Control - Industrial Look */}
-          <div className="flex flex-col items-start">
-            <span className="text-[11px] font-display italic uppercase tracking-[0.4em] text-gold-light/40 mb-3 ml-2">WAGER SELECTION</span>
-            <div className="glass-panel p-1.5 rounded-[2rem] border border-white/10 flex items-center gap-6 shadow-2xl bg-black/40">
-              <button 
-                onClick={() => setBetIndex(prev => (prev - 1 + CONFIG.BET_OPTIONS.length) % CONFIG.BET_OPTIONS.length)}
-                disabled={isSpinning}
-                className="w-14 h-14 rounded-2xl bg-white/5 text-gold-light flex items-center justify-center hover:bg-white/10 disabled:opacity-10 transition-all active:scale-90 border border-white/5 shadow-lg"
-              >
-                <Minus className="w-5 h-5" />
-              </button>
-              <div className="flex flex-col items-center min-w-[100px]">
-                <span className="font-mono font-black text-4xl text-gold-light tracking-tighter neon-text">${bet}</span>
-                <span className="text-[8px] font-serif italic uppercase tracking-widest text-white/20">per pull</span>
-              </div>
-              <button 
-                onClick={() => setBetIndex(prev => (prev + 1) % CONFIG.BET_OPTIONS.length)}
-                disabled={isSpinning}
-                className="w-14 h-14 rounded-2xl bg-white/5 text-gold-light flex items-center justify-center hover:bg-white/10 disabled:opacity-10 transition-all active:scale-90 border border-white/5 shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Spin Button - The Centerpiece */}
-          <div className="relative group scale-110">
-            <div className={`absolute -inset-8 rounded-full blur-3xl transition-all duration-700 ${isSpinning ? 'bg-red-500/30' : 'bg-gold/40 group-hover:bg-gold/60'}`}></div>
-            <div className="absolute -inset-2 rounded-full border border-gold/20 animate-[spin_10s_linear_infinite]"></div>
-            
-            <motion.button
-              whileTap={{ scale: 0.85 }}
-              onClick={spin}
-              disabled={isSpinning || credits < bet}
-              className={`relative w-36 h-36 rounded-full border-[12px] border-[#1a1a1a] flex items-center justify-center shadow-[0_25px_50px_rgba(0,0,0,0.7),inset_0_4px_10px_rgba(255,255,255,0.2)] transition-all duration-500 ${
-                isSpinning ? 'bg-red-950/60' : 'metallic-gold'
-              }`}
-            >
-              <RefreshCw className={`w-16 h-16 ${isSpinning ? 'text-red-400 animate-spin' : 'text-emerald-deep group-hover:rotate-180 transition-transform duration-1000 ease-in-out'}`} />
-            </motion.button>
-            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 font-display italic text-sm font-black text-gold-light uppercase tracking-[0.5em] opacity-40 skew-x-[-10deg]">INITIATE</div>
-          </div>
-
-          {/* Stats Display - Digital Readout */}
-          <div className="flex flex-col items-end">
-            <span className="text-[11px] font-display italic uppercase tracking-[0.4em] text-gold-light/40 mb-3 mr-2">SESSION METRICS</span>
-            <div className="glass-panel px-10 py-5 rounded-[2rem] border border-white/10 shadow-2xl bg-black/40 flex flex-col items-end">
-              <span className="font-mono font-black text-4xl text-gold-light tracking-tighter neon-text">{stats.spins.toString().padStart(5, '0')}</span>
-              <span className="text-[8px] font-serif italic uppercase tracking-widest text-white/20">total rotations</span>
-            </div>
-          </div>
-        </div>
       </main>
 
-      {/* Win Overlay - Editorial Impact */}
+      {/* Bottom Bar */}
+      <footer style={{ height: 'var(--footer-h)' }} className="fixed bottom-0 w-full z-40 bar-bg border-t flex items-center justify-between px-4 sm:px-8 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center gap-3 footer-item">
+          <div className="pill-container flex items-center gap-2 sm:gap-4 px-2 h-[92%] rounded-full py-1">
+            <button 
+              onClick={() => {
+                setBetIndex(prev => (prev - 1 + CONFIG.BET_OPTIONS.length) % CONFIG.BET_OPTIONS.length);
+                sounds.playTone(330, 'sine', 0.05, 0.05);
+              }}
+              className="bet-btn aspect-square h-8 rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/40 flex items-center justify-center hover:bg-[#11421f] transition-all shadow-lg active:scale-90"
+            >
+              <Minus size={16} />
+            </button>
+            <div className="flex flex-col items-center px-2">
+              <span className="font-label text-[8px] sm:text-[10px] uppercase tracking-tighter text-[#f2ca50]/50 leading-none mb-0.5">Bet</span>
+              <span className="font-headline font-bold text-[#f2ca50] min-w-[2.5em] sm:min-w-[3.5em] text-center leading-none">${bet}</span>
+            </div>
+            <button 
+              onClick={() => {
+                setBetIndex(prev => (prev + 1) % CONFIG.BET_OPTIONS.length);
+                sounds.playTone(440, 'sine', 0.05, 0.05);
+              }}
+              className="bet-btn aspect-square h-8 rounded-full bg-[#0b3d1b] text-[#f2ca50] border border-[#f2ca50]/40 flex items-center justify-center hover:bg-[#11421f] transition-all shadow-lg active:scale-90"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+          
+          <button 
+            onClick={() => {
+              setBetIndex(CONFIG.BET_OPTIONS.length - 1);
+              sounds.playTone(880, 'sine', 0.1, 0.1);
+            }}
+            className="flex flex-col items-center justify-center h-[92%] px-4 rounded-xl bg-gradient-to-b from-[#f2ca50] to-[#d4af37] text-[#001806] hover:brightness-110 transition-all max-bet-glow active:scale-95"
+          >
+            <span className="font-label font-black text-xs uppercase tracking-tighter">MAX</span>
+            <span className="font-label font-black text-[10px] uppercase -mt-1">BET</span>
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center footer-item flex-1 max-w-[140px] sm:max-w-xs mx-2 sm:mx-4 justify-center">
+          <div className="w-full h-[92%] rounded-xl win-display-box flex flex-col items-center justify-center border-2 px-4 py-1">
+            <span className="font-label text-[8px] sm:text-[9px] uppercase tracking-[0.2em] text-[#f2ca50]/70 mb-0.5">Win Amount</span>
+            <span className="font-headline font-black text-[#f2ca50] text-xl tracking-tight leading-none">${win ? win.amount.toLocaleString() : '0'}</span>
+          </div>
+        </div>
+
+        <div className="w-20 sm:w-32"></div>
+      </footer>
+
+      {/* Spin Button */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <button 
+          onClick={spin}
+          disabled={isSpinning || credits < bet}
+          className="spin-button-outer" 
+          style={{ width: 'var(--spin-size)', height: 'var(--spin-size)', opacity: (isSpinning || credits < bet) ? 0.5 : 1 }}
+        >
+          <div className="spin-button-inner w-full h-full flex items-center justify-center">
+            {isSpinning ? (
+              <RotateCw className="animate-spin text-[#f2ca50]" size={40} />
+            ) : (
+              <span className="font-headline font-black text-[#f2ca50] uppercase tracking-[0.2em]" style={{ fontSize: 'calc(var(--spin-size) * 0.22)' }}>SPIN</span>
+            )}
+          </div>
+        </button>
+      </div>
+
+      {/* Win Overlay */}
       <AnimatePresence>
         {win && (
           <motion.div 
@@ -419,122 +522,66 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setWin(null)}
-            className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-black/95 backdrop-blur-3xl cursor-pointer"
+            className="win-overlay fixed inset-0 z-[150] cursor-pointer w-full h-full bg-black/80 flex items-center justify-center"
           >
-            <motion.div 
-              initial={{ scale: 0.7, y: 100, rotate: -5 }}
-              animate={{ scale: 1, y: 0, rotate: 0 }}
-              className="text-center pointer-events-none"
-            >
+            <div className="win-content flex flex-col items-center justify-center w-full h-full px-4">
               <motion.div 
-                animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="mb-6"
+                initial={{ scale: 0.5, rotate: -10 }}
+                animate={{ scale: 1, rotate: -2 }}
+                className="text-center pointer-events-none w-full max-w-4xl"
               >
-                <Trophy className="w-24 h-24 text-gold-light mx-auto glow-gold" />
+                <h2 className="font-headline font-black italic text-6xl md:text-8xl text-[#f2ca50] drop-shadow-[0_0_30px_rgba(242,202,80,0.8)] tracking-tighter uppercase">
+                  {win.type === 'MEGA' ? 'MEGA WIN!' : win.type === 'BIG' ? 'BIG WIN!' : 'WINNER!'}
+                </h2>
+                <div className="mt-4 inline-block bg-[#f89c64] text-[#321200] px-8 py-3 font-label font-bold text-2xl rounded-sm shadow-xl border border-[#f2ca50]/30 min-w-[200px]">
+                  +${win.amount.toLocaleString()}
+                </div>
               </motion.div>
-              
-              <h2 className={`font-display italic font-black tracking-tighter uppercase leading-none ${
-                win.type === 'MEGA' ? 'text-[12rem] text-gold-light skew-x-[-15deg]' : 
-                win.type === 'BIG' ? 'text-[10rem] text-gold skew-x-[-10deg]' : 'text-[8rem] text-gold-dark skew-x-[-5deg]'
-              }`}>
-                {win.type === 'MEGA' ? 'MEGA' : win.type === 'BIG' ? 'BIG' : 'WIN'}
-              </h2>
-              
-              {win.type !== 'SMALL' && win.type !== 'LDW' && (
-                <h3 className="font-display text-5xl font-black italic text-white/20 -mt-8 tracking-[0.5em] uppercase">FORTUNE</h3>
-              )}
-
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4, type: "spring" }}
-                className="mt-12 font-mono text-9xl font-black text-white tracking-tighter neon-text"
-              >
-                ${win.amount.toLocaleString()}
-              </motion.div>
-            </motion.div>
-            
-            <div className="mt-24 font-serif italic text-sm uppercase tracking-[0.6em] text-gold-light/30 animate-pulse">
-              COLLECT WINNINGS
+              <div className="mt-12 text-[#f2ca50] font-label font-bold tracking-widest uppercase border-b border-[#f2ca50] animate-pulse">Tap anywhere to continue</div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Paytable Modal - Magazine Layout */}
+      {/* Paytable Modal */}
       <AnimatePresence>
         {showPaytable && (
           <motion.div 
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 200 }}
-            className="fixed inset-0 z-[110] bg-emerald-deep p-16 overflow-y-auto felt-texture"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="paytable-modal fixed inset-0 z-[210] bg-[#001806] p-4 sm:p-8 overflow-y-auto"
           >
-            <div className="max-w-5xl mx-auto">
-              <div className="flex justify-between items-start mb-20">
-                <div className="flex flex-col">
-                  <h2 className="font-display text-9xl font-black italic text-gold-light tracking-tighter skew-x-[-10deg] leading-none">PAY</h2>
-                  <h2 className="font-display text-9xl font-black italic text-white/10 tracking-tighter skew-x-[-10deg] leading-none -mt-4 ml-12">TABLE</h2>
-                </div>
-                <button onClick={() => setShowPaytable(false)} className="w-20 h-20 rounded-[2rem] glass-panel flex items-center justify-center text-gold-light hover:rotate-90 transition-all duration-500">
-                  <X className="w-10 h-10" />
-                </button>
+            <div className="max-w-2xl mx-auto">
+              <div className="flex justify-between items-center mb-6 sm:mb-8">
+                <h2 className="font-headline text-3xl sm:text-4xl font-black italic text-[#f2ca50]">PAY TABLE</h2>
+                <button onClick={() => setShowPaytable(false)} className="text-[#f2ca50]"><X size={32} /></button>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="grid grid-cols-1 gap-4">
                 {SYMBOLS.map(s => (
-                  <div key={s.id} className="flex items-center gap-10 glass-panel p-8 rounded-[2.5rem] border-l-8 border-gold shadow-2xl group hover:bg-white/5 transition-all">
-                    <div className="w-28 h-28 flex-shrink-0 bg-black/60 border border-white/10 rounded-[2rem] flex items-center justify-center text-5xl group-hover:scale-110 transition-transform">
-                      {typeof s.icon === 'function' ? <s.icon /> : <s.icon className="w-14 h-14 glow-gold" style={{ color: s.color }} />}
+                  <div key={s.id} className="flex items-center gap-3 sm:gap-4 bg-[#0b3d1b] p-3 sm:p-4 rounded-xl border-l-4 border-[#f2ca50] shadow-lg">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 bg-[#001204] border border-[#f2ca50]/40 rounded-lg flex items-center justify-center overflow-hidden">
+                      {renderSymbol(s, false)}
                     </div>
-                    <div className="flex-1 grid grid-cols-3 gap-10">
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-display italic uppercase tracking-widest text-gold-light/40 mb-2">5X COMBO</span>
-                        <span className="font-mono font-black text-3xl text-gold-light tracking-tighter">${s.value * PAYOUTS[5]}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-display italic uppercase tracking-widest text-white/10 mb-2">4X COMBO</span>
-                        <span className="font-mono font-black text-3xl text-white/60 tracking-tighter">${s.value * PAYOUTS[4]}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-display italic uppercase tracking-widest text-white/10 mb-2">3X COMBO</span>
-                        <span className="font-mono font-black text-3xl text-white/40 tracking-tighter">${s.value * PAYOUTS[3]}</span>
-                      </div>
+                    <div className="flex-1 grid grid-cols-3 gap-2">
+                      <div className="text-center"><span className="block text-[10px] font-label text-[#d0c5af]">5X</span><span className="font-headline font-bold text-[#f2ca50]">{s.value * PAYOUTS[5]}</span></div>
+                      <div className="text-center"><span className="block text-[10px] font-label text-[#d0c5af]">4X</span><span className="font-headline font-bold text-white">{s.value * PAYOUTS[4]}</span></div>
+                      <div className="text-center"><span className="block text-[10px] font-label text-[#d0c5af]">3X</span><span className="font-headline font-bold text-white">{s.value * PAYOUTS[3]}</span></div>
                     </div>
                   </div>
                 ))}
               </div>
-              
-              <div className="mt-24 p-12 glass-panel rounded-[3rem] text-center border border-gold/10 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold/40 to-transparent"></div>
-                <h4 className="font-display text-3xl text-gold-light mb-6 italic tracking-[0.3em] uppercase skew-x-[-5deg]">REGULATORY DISCLOSURE</h4>
-                <p className="text-white/30 text-base font-light leading-relaxed max-w-2xl mx-auto font-serif italic">
-                  "Only the highest win paid per line. Wins are calculated on the middle payline. 
-                  Wild symbols substitute for all standard icons. Theoretical Return to Player (RTP) is fixed at 92.00%."
+              <div className="mt-12 p-6 bg-[#0b3d1b] rounded-xl text-center border border-[#f2ca50]/10">
+                <h4 className="font-headline text-lg text-[#f2ca50] mb-2 italic">House Rules</h4>
+                <p className="text-[#baf0be] text-sm">
+                  Only the highest win paid per line. Wins are calculated on the middle payline. 
+                  Wild substitutes for all symbols. RTP: ~92%.
                 </p>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Bottom Navigation - Luxury Rail */}
-      <nav className="flex justify-around items-center px-12 h-28 glass-panel border-t border-white/5 z-50 bg-black/40">
-        <button className="flex flex-col items-center justify-center metallic-gold text-emerald-deep rounded-[1.5rem] px-14 py-4 shadow-2xl transform -translate-y-4 transition-all hover:scale-105 active:scale-95">
-          <Menu className="w-6 h-6 mb-1" />
-          <span className="font-display italic font-black uppercase tracking-[0.2em] text-[11px]">TERMINAL</span>
-        </button>
-        <button className="flex flex-col items-center justify-center text-gold-light/30 px-10 py-4 hover:text-gold-light transition-all group">
-          <History className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" />
-          <span className="font-serif italic uppercase tracking-[0.3em] text-[10px]">LEDGER</span>
-        </button>
-        <button className="flex flex-col items-center justify-center text-gold-light/30 px-10 py-4 hover:text-gold-light transition-all group">
-          <Trophy className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" />
-          <span className="font-serif italic uppercase tracking-[0.3em] text-[10px]">HALL OF FAME</span>
-        </button>
-      </nav>
     </div>
   );
 }
