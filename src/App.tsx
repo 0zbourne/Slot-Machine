@@ -148,6 +148,7 @@ export default function App() {
   const [credits, setCredits] = useState(CONFIG.STARTING_CREDITS);
   const [betIndex, setBetIndex] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [spinningReels, setSpinningReels] = useState<boolean[]>([false, false, false, false, false]);
   const [reels, setReels] = useState<any[][]>([]);
   const [win, setWin] = useState<any>(null);
   const [showPaytable, setShowPaytable] = useState(false);
@@ -239,6 +240,7 @@ export default function App() {
 
     sounds.playSpinStart();
     setIsSpinning(true);
+    setSpinningReels([true, true, true, true, true]);
     setCredits(prev => prev - bet);
     setWin(null);
     setWinningIndices([]);
@@ -274,6 +276,11 @@ export default function App() {
 
     // Animate Reels
     const stopReel = (idx: number, finalSymbols: any[]) => {
+      setSpinningReels(prev => {
+        const next = [...prev];
+        next[idx] = false;
+        return next;
+      });
       setReels(prev => {
         const next = [...prev];
         next[idx] = finalSymbols;
@@ -429,9 +436,9 @@ export default function App() {
             {reels.map((reel, rIdx) => (
               <div key={rIdx} className={`reel-container h-full relative flex flex-col ${suspenseActive && rIdx !== 2 ? 'suspense-reel-dim' : ''}`}>
                 <motion.div 
-                  className="reel-strip absolute w-full"
-                  animate={isSpinning ? { y: [0, -1000] } : { y: 0 }}
-                  transition={isSpinning ? { repeat: Infinity, duration: 0.1, ease: "linear" } : { duration: 0.5 }}
+                  className={`reel-strip absolute w-full ${spinningReels[rIdx] ? 'blur-[2px]' : ''}`}
+                  animate={spinningReels[rIdx] ? { y: [0, -1000] } : { y: 0 }}
+                  transition={spinningReels[rIdx] ? { repeat: Infinity, duration: 0.1, ease: "linear" } : { duration: 0.5 }}
                   style={{ transform: 'translateY(calc(-1 * var(--symbol-h)))' }}
                 >
                   {reel.map((symbol, sIdx) => (
