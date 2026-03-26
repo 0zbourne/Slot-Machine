@@ -22,6 +22,7 @@ const CONFIG = {
   BET_OPTIONS: [10, 25, 50, 100],
   REEL_COUNT: 5,
   ROW_COUNT: 3,
+  REEL_VISUAL_COUNT: 15, // Total symbols in the strip for animation
   SPIN_DURATION: 2000,
   REEL_DELAY: 200,
   SUSPENSE_REEL: 2, // Index of reel to slow down (3rd reel)
@@ -162,7 +163,7 @@ export default function App() {
   // Initialize reels
   useEffect(() => {
     const initialReels = Array(CONFIG.REEL_COUNT).fill(0).map(() => 
-      Array(CONFIG.ROW_COUNT).fill(0).map(() => getRandomSymbol())
+      generateFullReel(Array(CONFIG.ROW_COUNT).fill(0).map(() => getRandomSymbol()))
     );
     setReels(initialReels);
 
@@ -178,6 +179,17 @@ export default function App() {
       random -= s.weight;
     }
     return SYMBOLS[SYMBOLS.length - 1];
+  };
+
+  const generateFullReel = (baseSymbols: any[]) => {
+    const fullReel = [...baseSymbols];
+    // Add random symbols until we reach REEL_VISUAL_COUNT - 3
+    while (fullReel.length < CONFIG.REEL_VISUAL_COUNT - 3) {
+      fullReel.push(getRandomSymbol());
+    }
+    // Add the first 3 symbols again at the end for seamless looping
+    fullReel.push(baseSymbols[0], baseSymbols[1], baseSymbols[2]);
+    return fullReel;
   };
 
   const calculateWin = useCallback((currentReels: any[][]) => {
@@ -276,6 +288,7 @@ export default function App() {
 
     // Animate Reels
     const stopReel = (idx: number, finalSymbols: any[]) => {
+      const fullReel = generateFullReel(finalSymbols);
       setSpinningReels(prev => {
         const next = [...prev];
         next[idx] = false;
@@ -283,7 +296,7 @@ export default function App() {
       });
       setReels(prev => {
         const next = [...prev];
-        next[idx] = finalSymbols;
+        next[idx] = fullReel;
         return next;
       });
       sounds.playReelStop(idx);
@@ -436,10 +449,9 @@ export default function App() {
             {reels.map((reel, rIdx) => (
               <div key={rIdx} className={`reel-container h-full relative flex flex-col ${suspenseActive && rIdx !== 2 ? 'suspense-reel-dim' : ''}`}>
                 <motion.div 
-                  className={`reel-strip absolute w-full ${spinningReels[rIdx] ? 'blur-[2px]' : ''}`}
-                  animate={spinningReels[rIdx] ? { y: [0, -1000] } : { y: 0 }}
-                  transition={spinningReels[rIdx] ? { repeat: Infinity, duration: 0.1, ease: "linear" } : { duration: 0.5 }}
-                  style={{ transform: 'translateY(calc(-1 * var(--symbol-h)))' }}
+                  className={`reel-strip absolute w-full ${spinningReels[rIdx] ? 'blur-[1px]' : ''}`}
+                  animate={spinningReels[rIdx] ? { y: ["0%", "-80%"] } : { y: "0%" }}
+                  transition={spinningReels[rIdx] ? { repeat: Infinity, duration: 0.2, ease: "linear" } : { type: "spring", stiffness: 200, damping: 25 }}
                 >
                   {reel.map((symbol, sIdx) => (
                     <div key={sIdx} className="symbol">
