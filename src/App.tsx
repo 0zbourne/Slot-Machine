@@ -23,8 +23,8 @@ const CONFIG = {
   REEL_COUNT: 5,
   ROW_COUNT: 3,
   REEL_VISUAL_COUNT: 15, // Total symbols in the strip for animation
-  SPIN_DURATION: 2000,
-  REEL_DELAY: 200,
+  SPIN_DURATION: 1200,
+  REEL_DELAY: 150,
   SUSPENSE_REEL: 2, // Index of reel to slow down (3rd reel)
 };
 
@@ -306,7 +306,7 @@ export default function App() {
     setTimeout(() => stopReel(0, result[0]), CONFIG.SPIN_DURATION);
     setTimeout(() => stopReel(1, result[1]), CONFIG.SPIN_DURATION + CONFIG.REEL_DELAY);
     
-    const reel3Delay = isSuspense ? 4500 : CONFIG.SPIN_DURATION + (CONFIG.REEL_DELAY * 2);
+    const reel3Delay = isSuspense ? 3000 : CONFIG.SPIN_DURATION + (CONFIG.REEL_DELAY * 2);
     
     if (isSuspense) {
       setTimeout(() => {
@@ -451,7 +451,7 @@ export default function App() {
                 <motion.div 
                   className={`reel-strip absolute w-full ${spinningReels[rIdx] ? 'blur-[1px]' : ''}`}
                   animate={spinningReels[rIdx] ? { y: ["0%", "-80%"] } : { y: "0%" }}
-                  transition={spinningReels[rIdx] ? { repeat: Infinity, duration: 0.2, ease: "linear" } : { type: "spring", stiffness: 200, damping: 25 }}
+                  transition={spinningReels[rIdx] ? { repeat: Infinity, duration: 0.4, ease: "linear" } : { type: "spring", stiffness: 200, damping: 25 }}
                 >
                   {reel.map((symbol, sIdx) => (
                     <div key={sIdx} className="symbol">
